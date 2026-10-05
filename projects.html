@@ -1,0 +1,17 @@
+---
+layout: default
+title: Projects
+permalink: /projects/
+description: Things I've built.
+---
+<h1>Projects</h1>
+<p class="lede">A few things I've built.</p>
+<div class="cards">
+  {% for p in site.data.projects %}
+  <a class="card" href="{{ p.url }}">
+    <h3>{{ p.title }}</h3>
+    <p>{{ p.description }}</p>
+    <ul class="tags">{% for t in p.tags %}<li>{{ t }}</li>{% endfor %}</ul>
+  </a>
+  {% endfor %}
+</div>

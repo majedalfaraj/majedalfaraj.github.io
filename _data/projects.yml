@@ -1,0 +1,17 @@
+# Replace these placeholders with your real projects.
+# featured: true shows the project on the home page.
+- title: Project one
+  description: A one-sentence summary of what it does and why it's interesting.
+  tags: [Machine learning, Python]
+  url: https://github.com/majedalfaraj
+  featured: true
+- title: Project two
+  description: A one-sentence summary of what it does and why it's interesting.
+  tags: [Security, Systems]
+  url: https://github.com/majedalfaraj
+  featured: true
+- title: Project three
+  description: A one-sentence summary of what it does and why it's interesting.
+  tags: [Web]
+  url: https://github.com/majedalfaraj
+  featured: false

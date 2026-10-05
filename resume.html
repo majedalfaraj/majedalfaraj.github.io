@@ -1,0 +1,21 @@
+---
+layout: default
+title: Resume
+permalink: /resume/
+description: Education and background.
+---
+<h1>Resume</h1>
+<p class="lede">A short summary of my background.</p>
+{% assign pdf = site.static_files | where: "path", "/assets/resume.pdf" | first %}
+{% if pdf %}<p><a class="button" href="{{ pdf.path | relative_url }}">Download PDF</a></p>{% endif %}
+
+<h2>Education</h2>
+<div class="entry">
+  <div>
+    <h3>University of California, Berkeley</h3>
+    <p>B.S. Electrical Engineering and Computer Sciences</p>
+  </div>
+</div>
+
+<h2>Interests</h2>
+<p>Machine learning and cybersecurity.</p>
