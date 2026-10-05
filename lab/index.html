@@ -1,0 +1,9 @@
+---
+layout: default
+title: Lab
+permalink: /lab/
+description: Interactive demos for Data 100 and beyond.
+---
+<h1 class="page">Lab</h1>
+<p class="sub">Interactive demos I've built, mostly for students in Data 100. They open in a new tab.</p>
+<div class="lab">{% for item in site.data.lab %}{% include lab-card.html item=item %}{% endfor %}</div>

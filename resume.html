@@ -4,68 +4,36 @@ title: Resume
 permalink: /resume/
 description: Education, experience, and research.
 ---
-<h1>Resume</h1>
-{% assign pdf = site.static_files | where: "path", "/assets/resume.pdf" | first %}
-{% if pdf %}<p><a class="button" href="{{ pdf.path | relative_url }}">Download PDF</a></p>{% endif %}
+<h1 class="page">Resume</h1>
+<p class="sub">Education, experience, and research.</p>
+<p><a class="button" href="{{ '/assets/resume.pdf' | relative_url }}">Download PDF</a></p>
 
-<h2>Education</h2>
-<div class="entry">
-  <div>
-    <h3>University of California, Berkeley</h3>
-    <p>B.Sc. Electrical Engineering and Computer Sciences · GPA 4.0</p>
+<section>
+  <h2>Education</h2>
+  <div class="entry-edu">
+    <time class="muted" style="color:var(--muted);font-size:.9rem">May 2027</time>
+    <div><h3 style="margin:0;font:600 1.08rem var(--sans)">University of California, Berkeley</h3>
+    <p style="margin:6px 0 0;color:var(--muted);font-size:.97rem">B.Sc. Electrical Engineering and Computer Sciences · GPA 4.0<br>Coursework: Machine Learning, Compilers, Computer Security, Computer Architecture, Data Structures, Operating Systems.</p></div>
   </div>
-  <time>May 2027</time>
-</div>
-<p class="muted">Coursework: Machine Learning, Compilers, Computer Security, Computer Architecture, Data Structures, Operating Systems.</p>
+</section>
 
-<h2>Experience</h2>
-<div class="entry">
-  <div>
-    <h3>Google</h3>
-    <p>Software Engineering Intern · Seattle, WA</p>
+<section>
+  <h2>Experience &amp; research</h2>
+  {% for e in site.data.experience %}
+  <div class="job">
+    <time>{{ e.period }}</time>
+    <div><h3>{{ e.title }}, {{ e.org }}</h3>
+    <ul>{% for b in e.bullets %}<li>{{ b }}</li>{% endfor %}</ul></div>
   </div>
-  <time>May – Aug 2026</time>
-</div>
-<ul class="bullets">
-  <li>Architected a decoupled multi-agent validation framework in Go for Google Cloud Terraform tooling, with stateless orchestration, dynamic judge discovery, and 10+ concurrent workers.</li>
-  <li>Established the team-wide validation workflow for new judge LLMs, building 2 evaluation pipelines and a pluggable judge registry to test routing, failure modes, and hallucinations.</li>
-  <li>Productionised 6,000+ lines of reusable evaluation infrastructure that processes hundreds of code diffs in minutes and surfaces previously missed defects.</li>
-</ul>
+  {% endfor %}
+</section>
 
-<div class="entry">
-  <div>
-    <h3>UC Berkeley</h3>
-    <p>Teaching Assistant, DATA C100 · Berkeley, CA</p>
-  </div>
-  <time>Aug 2025 – Present</time>
-</div>
-<ul class="bullets">
-  <li>Support a 1,200+ student upper-division data science course through tutoring, office hours, grading, exam administration, and online instruction.</li>
-  <li>Author parameterised PrairieLearn exam questions for 1,000+ students, with randomised generators and grading logic that produce individualised exam variants at scale.</li>
-</ul>
+<section>
+  <h2>Honors</h2>
+  <div class="job"><time>2020, 2021</time><div><h3>Two-time Bronze Medalist, Saudi National Olympiad in Informatics</h3><p>Top 5 nationally.</p></div></div>
+</section>
 
-<h2>Research</h2>
-<div class="entry">
-  <div>
-    <h3>University of Toronto | Baycrest Health Sciences</h3>
-    <p>Co-op Researcher, Cranium Lab (PI: Prof. J. Jean Chen) · Toronto, Canada</p>
-  </div>
-  <time>Jun – Aug 2025</time>
-</div>
-<ul class="bullets">
-  <li>Developed a 3D conditional GAN in PyTorch/MONAI to translate resting-state CBF to CVR from paired MRI volumes, including 3D preprocessing and evaluation pipelines.</li>
-  <li>Achieved r = 0.83, R² = 0.66, and PSNR = 24.05 dB; reduced CVR error from 8.6 to 5.4 and doubled SSIM from 0.18 to 0.38.</li>
-</ul>
-
-<h2>Honors</h2>
-<div class="entry">
-  <div>
-    <h3>Two-time Bronze Medalist, Saudi National Olympiad in Informatics</h3>
-    <p>Top 5 nationally</p>
-  </div>
-  <time>2020, 2021</time>
-</div>
-
-<h2>Skills</h2>
-<p><strong>Languages:</strong> Go, Python, C++, Java, OCaml, SQL, x86-64<br>
-<strong>AI/ML &amp; systems:</strong> Agents, PyTorch, MONAI, Protocol Buffers, GitHub API, Git</p>
+<section>
+  <h2>Skills</h2>
+  <p style="color:var(--muted);margin:0"><b style="color:var(--text)">Languages:</b> Go, Python, C++, Java, OCaml, SQL, x86-64<br><b style="color:var(--text)">AI/ML &amp; systems:</b> Agents, PyTorch, MONAI, Protocol Buffers, GitHub API, Git</p>
+</section>

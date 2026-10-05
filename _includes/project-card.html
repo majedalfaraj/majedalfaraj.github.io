@@ -1,7 +1,5 @@
-{% assign p = include.project %}
-{% if p.url %}<a class="card" href="{{ p.url }}">{% else %}<div class="card">{% endif %}
-  <h3>{{ p.title }}</h3>
-  {% if p.period %}<span class="muted period">{{ p.period }}</span>{% endif %}
-  <p>{{ p.description }}</p>
-  <ul class="tags">{% for t in p.tags %}<li>{{ t }}</li>{% endfor %}</ul>
-{% if p.url %}</a>{% else %}</div>{% endif %}
+<div class="pc">
+  <h3>{{ include.p.title }}</h3>
+  <small>{{ include.p.tags | join: ", " }} · {{ include.p.period }}</small>
+  <p>{{ include.p.description }}</p>
+</div>

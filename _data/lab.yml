@@ -1,0 +1,16 @@
+# Interactive demos. Each opens in a new tab.
+- title: Data 100 Transformations
+  description: Skew, log fits, the bulge diagram, and a reference table for choosing a transformation.
+  url: https://claude.ai/artifact/5ab2n67Pe3KJYEw3AjkE7Q
+  thumb: skew
+  tag: Data 100
+- title: Transformation Visualizer
+  description: A standalone visualizer with fixed axes, so you can compare how transformations bend the data.
+  url: https://claude.ai/artifact/D8poV75yf5TqgrbnWu9u5k
+  thumb: curves
+  tag: Data 100
+- title: Regression Visualizer
+  description: Explore regression with a Simple / Full toggle.
+  url: https://claude.ai/artifact/S5ecPsjfTv26kCXc3mkkS8
+  thumb: regression
+  tag: Data 100

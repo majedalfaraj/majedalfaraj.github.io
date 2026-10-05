@@ -4,19 +4,58 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
+  <script>
+    (function () {
+      var m;
+      try { m = localStorage.getItem("theme"); } catch (e) {}
+      if (!m) m = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      document.documentElement.dataset.theme = m;
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
   <link rel="icon" href="{{ '/assets/img/favicon.svg' | relative_url }}" type="image/svg+xml">
   {% seo %}
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
-  {% include header.html %}
-  <main id="main" class="wrap">
+  <aside class="side">
+    <img class="me" src="{{ '/assets/img/me.jpg' | relative_url }}" width="150" height="150" alt="Majed smiling in a red Canada bucket hat with fireworks behind him">
+    <a class="name" href="{{ '/' | relative_url }}">Majed<br>Alfaraj<span>.</span></a>
+    <p class="role">EECS senior at UC Berkeley</p>
+    <nav aria-label="Main">
+      <a href="{{ '/' | relative_url }}"{% if page.url == '/' %} aria-current="page"{% endif %}>Home</a>
+      <a href="{{ '/projects/' | relative_url }}"{% if page.url == '/projects/' %} aria-current="page"{% endif %}>Projects</a>
+      <a href="{{ '/lab/' | relative_url }}"{% if page.url contains '/lab/' %} aria-current="page"{% endif %}>Lab</a>
+      <a href="{{ '/resume/' | relative_url }}"{% if page.url == '/resume/' %} aria-current="page"{% endif %}>Resume</a>
+    </nav>
+    <div class="bottom">
+      <div class="soc">
+        {% if site.data.links.github != "" %}<a href="{{ site.data.links.github }}" rel="me">GitHub ↗</a>{% endif %}
+        {% if site.data.links.linkedin != "" %}<a href="{{ site.data.links.linkedin }}" rel="me">LinkedIn ↗</a>{% endif %}
+        <a href="{{ '/assets/resume.pdf' | relative_url }}">Resume (PDF) ↓</a>
+      </div>
+      <button id="theme" class="theme" type="button"></button>
+    </div>
+  </aside>
+  <main id="main">
     {{ content }}
   </main>
-  {% include footer.html %}
+  <script>
+    (function () {
+      var r = document.documentElement, b = document.getElementById("theme");
+      function set(m) {
+        r.dataset.theme = m;
+        b.textContent = m === "dark" ? "☀️" : "🌙";
+        b.setAttribute("aria-label", m === "dark" ? "Switch to light mode" : "Switch to dark mode");
+        try { localStorage.setItem("theme", m); } catch (e) {}
+        document.dispatchEvent(new Event("themechange"));
+      }
+      set(r.dataset.theme);
+      b.addEventListener("click", function () { set(r.dataset.theme === "dark" ? "light" : "dark"); });
+    })();
+  </script>
 </body>
 </html>

@@ -2,25 +2,25 @@
 layout: default
 title: Home
 ---
-<section class="hero">
-  <img src="{{ '/assets/img/profile.jpg' | relative_url }}" alt="Portrait of Majed Alfaraj" width="148" height="148">
-  <div>
-    <h1>Majed Alfaraj</h1>
-    <p class="lede">EECS senior at UC Berkeley, interested in machine learning, systems, and security.</p>
+<p class="intro">Hi, I'm Majed. I'm a senior at UC Berkeley studying EECS, interested in machine learning, systems, and security.</p>
+<p>This past summer I interned at Google, and I TA Data 100. This site has my work and some demos I've built for students.</p>
+
+<section>
+  <h2>Experience <a href="{{ '/resume/' | relative_url }}">Full resume →</a></h2>
+  {% for e in site.data.experience %}
+  <div class="job">
+    <time>{{ e.period }}</time>
+    <div><h3>{{ e.title }}, {{ e.org }}</h3><p>{{ e.summary }}</p></div>
   </div>
+  {% endfor %}
 </section>
 
-<ul class="social">
-  {% if site.data.links.github != "" %}<li><a href="{{ site.data.links.github }}" rel="me">{% include icons.html name="github" %} GitHub</a></li>{% endif %}
-  {% if site.data.links.linkedin != "" %}<li><a href="{{ site.data.links.linkedin }}" rel="me">{% include icons.html name="linkedin" %} LinkedIn</a></li>{% endif %}
-</ul>
+<section>
+  <h2>Projects <small>course work, code kept private</small></h2>
+  <div class="pg">{% for p in site.data.projects %}{% include project-card.html p=p %}{% endfor %}</div>
+</section>
 
-<h2>About</h2>
-<p>Hi, I'm Majed. I'm a senior at UC Berkeley studying Electrical Engineering and Computer Sciences, graduating in May 2027. This past summer I interned at Google building evaluation infrastructure for LLM agents, and I'm a teaching assistant for Berkeley's Data 100. I'm interested in machine learning, systems, and security.</p>
-
-<h2>Projects</h2>
-<p class="muted">Course projects. The code is kept private for academic integrity, but I'm happy to talk through any of them.</p>
-<div class="cards">
-  {% for p in site.data.projects %}{% if p.featured %}{% include project-card.html project=p %}{% endif %}{% endfor %}
-</div>
-<a class="more" href="{{ '/projects/' | relative_url }}">All projects →</a>
+<section>
+  <h2>Lab <a href="{{ '/lab/' | relative_url }}">All demos →</a></h2>
+  <div class="lab">{% for item in site.data.lab %}{% include lab-card.html item=item %}{% endfor %}</div>
+</section>

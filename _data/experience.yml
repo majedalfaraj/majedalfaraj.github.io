@@ -1,0 +1,25 @@
+- org: Google
+  title: Software Engineering Intern
+  place: Seattle, WA
+  period: May – Aug 2026
+  summary: Built a multi-agent validation framework in Go for Cloud Terraform tooling, and the workflow for qualifying new judge LLMs.
+  bullets:
+    - Architected a decoupled multi-agent validation framework in Go for Google Cloud Terraform tooling, with stateless orchestration, dynamic judge discovery, and 10+ concurrent workers.
+    - Established the team-wide validation workflow for new judge LLMs, building 2 evaluation pipelines and a pluggable judge registry to test routing, failure modes, and hallucinations.
+    - Productionised 6,000+ lines of reusable evaluation infrastructure that processes hundreds of code diffs in minutes and surfaces previously missed defects.
+- org: UC Berkeley
+  title: Teaching Assistant, DATA C100
+  place: Berkeley, CA
+  period: Aug 2025 – Present
+  summary: Support 1,200+ students and author randomized PrairieLearn exam questions at scale.
+  bullets:
+    - Support a 1,200+ student upper-division data science course through tutoring, office hours, grading, exam administration, and online instruction.
+    - Author parameterised PrairieLearn exam questions for 1,000+ students, with randomised generators and grading logic that produce individualised exam variants at scale.
+- org: University of Toronto
+  title: "Co-op Researcher, Baycrest Cranium Lab"
+  place: Toronto, Canada
+  period: Jun – Aug 2025
+  summary: Built a 3D conditional GAN in PyTorch/MONAI translating MRI blood-flow maps (r = 0.83).
+  bullets:
+    - Worked in Prof. J. Jean Chen's Cranium Lab (Baycrest Health Sciences). Developed a 3D conditional GAN in PyTorch/MONAI to translate resting-state CBF to CVR from paired MRI volumes, including 3D preprocessing and evaluation pipelines.
+    - Achieved r = 0.83, R² = 0.66, and PSNR = 24.05 dB; reduced CVR error from 8.6 to 5.4 and doubled SSIM from 0.18 to 0.38.
