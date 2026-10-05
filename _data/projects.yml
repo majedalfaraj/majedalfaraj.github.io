@@ -1,17 +1,18 @@
-# Replace these placeholders with your real projects.
+# Course projects. Source code is private to respect academic integrity policies,
+# so there is no url. Add `url:` to a project if you ever publish one.
 # featured: true shows the project on the home page.
-- title: Project one
-  description: A one-sentence summary of what it does and why it's interesting.
-  tags: [Machine learning, Python]
-  url: https://github.com/majedalfaraj
+- title: PintOS Operating System
+  description: Extended the PintOS kernel with user processes and system calls, strict-priority scheduling with nested priority donation, user threads, and a concurrent file system with a write-back buffer cache, extensible files, and hierarchical directories.
+  tags: [C, Rust, Operating systems]
+  period: Jan – May 2026
   featured: true
-- title: Project two
-  description: A one-sentence summary of what it does and why it's interesting.
-  tags: [Security, Systems]
-  url: https://github.com/majedalfaraj
+- title: Lisp Compiler & Interpreter
+  description: Built a Lisp interpreter and compiler with tagged runtime values, lexical scoping, file I/O, computed jumps, function inlining, and common subexpression elimination.
+  tags: [OCaml, C, x86-64]
+  period: Aug – Dec 2025
   featured: true
-- title: Project three
-  description: A one-sentence summary of what it does and why it's interesting.
-  tags: [Web]
-  url: https://github.com/majedalfaraj
-  featured: false
+- title: Cryptographically Secure File Sharing
+  description: Implemented an end-to-end encrypted file-sharing system with authenticated access control, secure sharing and revocation, and tamper-resistant storage.
+  tags: [Go, Cryptography]
+  period: Jan – May 2025
+  featured: true

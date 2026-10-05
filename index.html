@@ -6,7 +6,7 @@ title: Home
   <img src="{{ '/assets/img/profile.jpg' | relative_url }}" alt="Portrait of Majed AlFaraj" width="148" height="148">
   <div>
     <h1>Majed AlFaraj</h1>
-    <p class="lede">EECS student at UC Berkeley, interested in machine learning and cybersecurity.</p>
+    <p class="lede">EECS senior at UC Berkeley, interested in machine learning, systems, and security.</p>
   </div>
 </section>
 
@@ -16,16 +16,11 @@ title: Home
 </ul>
 
 <h2>About</h2>
-<p>Hi, I'm Majed. I'm a junior at UC Berkeley studying Electrical Engineering and Computer Sciences. My interests are machine learning and cybersecurity, and I like building things that make both more understandable and more useful.</p>
+<p>Hi, I'm Majed. I'm a senior at UC Berkeley studying Electrical Engineering and Computer Sciences, graduating in May 2027. This past summer I interned at Google building evaluation infrastructure for LLM agents, and I'm a teaching assistant for Berkeley's Data 100. I'm interested in machine learning, systems, and security.</p>
 
-<h2>Selected projects</h2>
+<h2>Projects</h2>
+<p class="muted">Course projects. The code is kept private for academic integrity, but I'm happy to talk through any of them.</p>
 <div class="cards">
-  {% for p in site.data.projects %}{% if p.featured %}
-  <a class="card" href="{{ p.url }}">
-    <h3>{{ p.title }}</h3>
-    <p>{{ p.description }}</p>
-    <ul class="tags">{% for t in p.tags %}<li>{{ t }}</li>{% endfor %}</ul>
-  </a>
-  {% endif %}{% endfor %}
+  {% for p in site.data.projects %}{% if p.featured %}{% include project-card.html project=p %}{% endif %}{% endfor %}
 </div>
 <a class="more" href="{{ '/projects/' | relative_url }}">All projects →</a>

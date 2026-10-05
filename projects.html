@@ -5,13 +5,7 @@ permalink: /projects/
 description: Things I've built.
 ---
 <h1>Projects</h1>
-<p class="lede">A few things I've built.</p>
+<p class="lede">Course projects from my time at Berkeley. The source code is kept private to respect academic integrity policies, but I'm happy to talk through any of them.</p>
 <div class="cards">
-  {% for p in site.data.projects %}
-  <a class="card" href="{{ p.url }}">
-    <h3>{{ p.title }}</h3>
-    <p>{{ p.description }}</p>
-    <ul class="tags">{% for t in p.tags %}<li>{{ t }}</li>{% endfor %}</ul>
-  </a>
-  {% endfor %}
+  {% for p in site.data.projects %}{% include project-card.html project=p %}{% endfor %}
 </div>

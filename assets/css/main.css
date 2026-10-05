@@ -109,3 +109,10 @@ h2 { font-size: 1.5rem; margin: 2.6em 0 .8em; }
   main { padding-top: 36px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+.period { font-size: .85rem; }
+.card h3 { display: inline; }
+.card .period { margin-left: 8px; }
+.bullets { margin: 10px 0 28px; padding-left: 1.2em; color: var(--text); }
+.bullets li { margin-bottom: 6px; }
+.entry + .muted { margin-top: 6px; }
