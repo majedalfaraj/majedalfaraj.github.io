@@ -5,14 +5,14 @@
       <h3>{{ p.title }}</h3>
       <small>{{ p.tags | join: ", " }} · {{ p.period }}</small>
       <p>{{ p.description }}</p>
-      {% if p.explainer %}<button class="flip-btn" type="button" data-flip>In plain English <span aria-hidden="true">↻</span></button>{% endif %}
+      {% if p.explainer %}<button class="flip-btn" type="button" data-flip>Plain English <span aria-hidden="true">↻</span></button>{% endif %}
     </div>
     {% if p.explainer %}
     <div class="face back" inert>
       <span class="back-label">In plain English</span>
       <h3>{{ p.title }}</h3>
       <p>{{ p.explainer }}</p>
-      <button class="flip-btn" type="button" data-flip><span aria-hidden="true">↩</span> Back to details</button>
+      <button class="flip-btn" type="button" data-flip><span aria-hidden="true">↩</span> Back</button>
     </div>
     {% endif %}
   </div>

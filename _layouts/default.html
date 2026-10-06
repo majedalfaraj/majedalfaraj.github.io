@@ -91,6 +91,27 @@
       back.toggleAttribute("inert", !on);
       (on ? back : front).querySelector("button").focus({ preventScroll: true });
     });
+    (function () {
+      var cards = document.querySelectorAll(".pc.flip");
+      if (!cards.length) return;
+      function measure(card) {
+        var f = card.querySelector(".front"), b = card.querySelector(".back");
+        card.style.setProperty("--hf", f.offsetHeight + "px");
+        card.style.setProperty("--hb", b.offsetHeight + "px");
+        card.classList.add("measured");
+      }
+      function all() { cards.forEach(measure); }
+      all();
+      requestAnimationFrame(function () { requestAnimationFrame(function () { cards.forEach(function (c) { c.classList.add("ready"); }); }); });
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(all);
+      if (window.ResizeObserver) {
+        var w = 0;
+        new ResizeObserver(function (e) {
+          var nw = Math.round(e[0].contentRect.width);
+          if (nw !== w) { w = nw; all(); }
+        }).observe(document.querySelector(".pg"));
+      } else window.addEventListener("resize", all);
+    })();
   </script>
 </body>
 </html>
