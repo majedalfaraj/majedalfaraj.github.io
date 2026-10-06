@@ -2,4 +2,5 @@
   <h3>{{ include.p.title }}</h3>
   <small>{{ include.p.tags | join: ", " }} · {{ include.p.period }}</small>
   <p>{{ include.p.description }}</p>
+  {% if include.p.explainer %}<details><summary>In plain English</summary><p>{{ include.p.explainer }}</p></details>{% endif %}
 </div>

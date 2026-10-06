@@ -2,8 +2,13 @@
 layout: default
 title: Projects
 permalink: /projects/
-description: Course projects.
+description: Course projects and research.
 ---
 <h1 class="page">Projects</h1>
 <p class="sub">Course projects from Berkeley. The source is kept private to respect academic integrity policies, but I'm happy to talk through any of them.</p>
-<div class="pg">{% for p in site.data.projects %}{% include project-card.html p=p %}{% endfor %}</div>
+<div class="pg">{% for p in site.data.projects %}{% unless p.research %}{% include project-card.html p=p %}{% endunless %}{% endfor %}</div>
+
+<section style="margin-top:56px">
+  <h2>Research</h2>
+  <div class="pg">{% for p in site.data.projects %}{% if p.research %}{% include project-card.html p=p %}{% endif %}{% endfor %}</div>
+</section>

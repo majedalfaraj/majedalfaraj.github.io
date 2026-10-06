@@ -112,3 +112,11 @@ canvas.viz { width: 100%; height: 340px; display: block; }
   .job, .entry-edu { grid-template-columns: 1fr; gap: 4px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* Project explainers */
+.pc details { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px; }
+.pc summary { cursor: pointer; font-size: .85rem; font-weight: 600; color: var(--accent); list-style: none; }
+.pc summary::-webkit-details-marker { display: none; }
+.pc summary::before { content: "+"; display: inline-block; width: 1.1em; }
+.pc details[open] summary::before { content: "−"; }
+.pc details p { margin: 10px 0 0; }

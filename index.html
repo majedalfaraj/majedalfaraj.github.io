@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Home
+title: Majed Alfaraj
 ---
 <p class="intro">Hi, I'm Majed. I'm a senior at UC Berkeley studying EECS, interested in machine learning, systems, and security.</p>
 <p>This past summer I interned at Google, and I TA Data 100. This site has my work and some demos I've built for students.</p>
@@ -17,7 +17,7 @@ title: Home
 
 <section>
   <h2>Projects <small>course work, code kept private</small></h2>
-  <div class="pg">{% for p in site.data.projects %}{% include project-card.html p=p %}{% endfor %}</div>
+  <div class="pg">{% for p in site.data.projects %}{% unless p.research %}{% include project-card.html p=p %}{% endunless %}{% endfor %}</div>
 </section>
 
 <section>

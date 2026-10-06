@@ -1,10 +1,16 @@
 title: Majed Alfaraj
-description: Majed Alfaraj is an EECS student at UC Berkeley interested in machine learning and cybersecurity.
+description: Majed Alfaraj is an EECS senior at UC Berkeley interested in machine learning, systems, and security.
 url: https://majedalfaraj.github.io
 baseurl: ""
 lang: en
 
 markdown: kramdown
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      image: /assets/img/og.png
 
 plugins:
   - jekyll-seo-tag

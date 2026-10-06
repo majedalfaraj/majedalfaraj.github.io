@@ -1,18 +1,24 @@
-# Course projects. Source code is private to respect academic integrity policies,
-# so there is no url. Add `url:` to a project if you ever publish one.
-# featured: true shows the project on the home page.
+# Course projects (source is private, so there is no url) and one research project.
+# `explainer` shows under "In plain English". These are drafts: edit freely.
+# research: true moves an entry to the Research section of the Projects page.
 - title: PintOS Operating System
   description: Extended the PintOS kernel with user processes and system calls, strict-priority scheduling with nested priority donation, user threads, and a concurrent file system with a write-back buffer cache, extensible files, and hierarchical directories.
+  explainer: PintOS is a small teaching operating system. I extended it so it can run programs safely and let them ask the kernel for services through system calls. The scheduler always runs the highest-priority thread, and priority donation stops a high-priority thread from getting stuck behind a low-priority one that holds a lock it needs. The file system serves many programs at once, keeps recently used disk blocks in memory and writes them back later, lets files grow as needed, and supports folders inside folders.
   tags: [C, Rust, Operating systems]
   period: Jan – May 2026
-  featured: true
 - title: Lisp Compiler & Interpreter
   description: Built a Lisp interpreter and compiler with tagged runtime values, lexical scoping, file I/O, computed jumps, function inlining, and common subexpression elimination.
+  explainer: An interpreter runs a program directly, while a compiler translates it into machine code first. I built both for a small Lisp. At runtime each value carries a small tag so the program can tell a number from other kinds of data. The compiler also makes programs faster, for example by replacing a function call with the function's body (inlining) and by computing a repeated expression only once.
   tags: [OCaml, C, x86-64]
   period: Aug – Dec 2025
-  featured: true
 - title: Cryptographically Secure File Sharing
   description: Implemented an end-to-end encrypted file-sharing system with authenticated access control, secure sharing and revocation, and tamper-resistant storage.
+  explainer: Imagine cloud storage where you don't have to trust the server. Files are encrypted so the server can't read them, and any tampering is detected. Owners can share a file with someone and later take that access away.
   tags: [Go, Cryptography]
   period: Jan – May 2025
-  featured: true
+- title: 3D conditional GAN for brain-imaging translation
+  description: At the University of Toronto and Baycrest, developed a 3D conditional GAN in PyTorch/MONAI to translate resting-state cerebral blood flow (CBF) into cerebrovascular reactivity (CVR) from paired MRI volumes. Reached r = 0.83, R² = 0.66, and PSNR = 24.05 dB, cut CVR error from 8.6 to 5.4, and doubled SSIM from 0.18 to 0.38.
+  explainer: Doctors can measure resting blood flow in the brain from an MRI scan. Cerebrovascular reactivity, which shows how well blood vessels respond when the brain needs more blood, is harder to measure. I trained a neural network on paired scans to predict the second kind of map from the first. A GAN pairs a generator that produces maps with a discriminator that tries to tell them from real ones, and "conditional" means the generator starts from a scan of the same person.
+  tags: [PyTorch, MONAI, Research]
+  period: Jun – Aug 2025
+  research: true
