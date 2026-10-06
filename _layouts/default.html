@@ -57,5 +57,16 @@
       b.addEventListener("click", function () { set(r.dataset.theme === "dark" ? "light" : "dark"); });
     })();
   </script>
+  <script>
+    document.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-flip]");
+      if (!b) return;
+      var card = b.closest(".pc"), front = card.querySelector(".front"), back = card.querySelector(".back");
+      var on = card.classList.toggle("flipped");
+      front.toggleAttribute("inert", on);
+      back.toggleAttribute("inert", !on);
+      (on ? back : front).querySelector("button").focus({ preventScroll: true });
+    });
+  </script>
 </body>
 </html>

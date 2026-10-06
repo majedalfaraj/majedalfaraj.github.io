@@ -1,6 +1,19 @@
-<div class="pc">
-  <h3>{{ include.p.title }}</h3>
-  <small>{{ include.p.tags | join: ", " }} · {{ include.p.period }}</small>
-  <p>{{ include.p.description }}</p>
-  {% if include.p.explainer %}<details><summary>In plain English</summary><p>{{ include.p.explainer }}</p></details>{% endif %}
+{% assign p = include.p %}
+<div class="pc{% if p.explainer %} flip{% endif %}">
+  <div class="flip-inner">
+    <div class="face front">
+      <h3>{{ p.title }}</h3>
+      <small>{{ p.tags | join: ", " }} · {{ p.period }}</small>
+      <p>{{ p.description }}</p>
+      {% if p.explainer %}<button class="flip-btn" type="button" data-flip>In plain English <span aria-hidden="true">↻</span></button>{% endif %}
+    </div>
+    {% if p.explainer %}
+    <div class="face back" inert>
+      <span class="back-label">In plain English</span>
+      <h3>{{ p.title }}</h3>
+      <p>{{ p.explainer }}</p>
+      <button class="flip-btn" type="button" data-flip><span aria-hidden="true">↩</span> Back to details</button>
+    </div>
+    {% endif %}
+  </div>
 </div>
