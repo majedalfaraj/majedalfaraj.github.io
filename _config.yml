@@ -13,7 +13,6 @@ defaults:
       image: /assets/img/og.png
 
 plugins:
-  - jekyll-seo-tag
   - jekyll-sitemap
 
 exclude:

@@ -17,7 +17,31 @@
   <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
   <link rel="icon" href="{{ '/assets/img/favicon.svg' | relative_url }}" type="image/svg+xml">
-  {% seo %}
+  <link rel="apple-touch-icon" href="{{ '/assets/img/apple-touch-icon.png' | relative_url }}">
+  {% assign tab = page.tab | default: site.title %}
+  {% assign desc = page.description | default: site.description %}
+  {% assign img = page.image | default: site.image | absolute_url %}
+  <title>{{ tab }}</title>
+  <meta name="description" content="{{ desc | escape }}">
+  <link rel="canonical" href="{{ page.url | absolute_url }}">
+  <meta name="theme-color" content="#f4f1ea" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#16140f" media="(prefers-color-scheme: dark)">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{ site.title }}">
+  <meta property="og:title" content="{{ tab | escape }}">
+  <meta property="og:description" content="{{ desc | escape }}">
+  <meta property="og:url" content="{{ page.url | absolute_url }}">
+  <meta property="og:image" content="{{ img }}">
+  <meta property="og:image:alt" content="Majed Alfaraj, EECS senior at UC Berkeley">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ tab | escape }}">
+  <meta name="twitter:description" content="{{ desc | escape }}">
+  <meta name="twitter:image" content="{{ img }}">
+  {% if page.url == '/' %}
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Person","name":"Majed Alfaraj","url":"{{ site.url }}/","image":"{{ '/assets/img/me.jpg' | absolute_url }}","description":{{ desc | jsonify }},"affiliation":{"@type":"CollegeOrUniversity","name":"University of California, Berkeley"},"sameAs":[{% if site.data.links.github != '' %}"{{ site.data.links.github }}"{% endif %}{% if site.data.links.linkedin != '' %},"{{ site.data.links.linkedin }}"{% endif %}]}
+  </script>
+  {% endif %}
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
