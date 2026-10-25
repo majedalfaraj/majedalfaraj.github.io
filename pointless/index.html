@@ -1,0 +1,1607 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pointless Studio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Figtree:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<style>
+/* Layout: a games-night table. Flat navy, cream paper notes, and the poster's bunting colours used sparingly as accents. */
+:root{
+  --ink:#1b1d45;      /* navy table */
+  --ink-2:#23265a;
+  --ink-3:#2d3069;
+  --line:#3c3f7c;
+  --paper:#efe6d2;    /* cream note */
+  --paper-2:#e2d6bb;
+  --on-paper:#2b2620;
+  --paper-muted:#6f6656;
+  --text:#f1eadb;
+  --muted:#a9a7c8;
+  --red:#e0533d;      /* bunting */
+  --mustard:#f0ad32;
+  --teal:#45ad9f;
+  --blue:#3a8ad0;
+  --plum:#6d4b92;
+  --f-display:"DM Serif Display",Georgia,"Times New Roman",serif;
+  --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-hand:"Patrick Hand","Segoe Print","Bradley Hand",cursive;
+  color-scheme:dark;
+}
+html,body{height:100%}
+[hidden]{display:none!important}
+body{background:var(--ink);color:var(--text);font-family:var(--f-body);font-size:15px;line-height:1.45}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--mustard);outline-offset:2px}
+h1,h2,h3{text-wrap:balance;margin:0;font-weight:400}
+.label{font-family:var(--f-hand);font-size:16px;letter-spacing:.03em;text-transform:uppercase;color:var(--muted)}
+.mono{font-family:var(--f-hand);font-size:15px;color:var(--muted)}
+.btn{background:var(--ink-3);border:1px solid var(--line);border-radius:6px;padding:8px 14px;font-weight:600}
+.btn:hover{border-color:var(--muted)}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.primary{background:var(--mustard);border-color:var(--mustard);color:var(--on-paper)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.danger{border-color:var(--red);color:#ff8a76}
+.btn.danger:hover{background:color-mix(in srgb,var(--red) 15%,transparent)}
+.btn.gold{border-color:var(--mustard);color:var(--mustard)}
+.btn.gold:hover{background:color-mix(in srgb,var(--mustard) 12%,transparent)}
+.btn.ghost{background:transparent}
+.btn.sm{padding:5px 10px;font-size:13px}
+input[type=text],input[type=number],textarea,select{background:var(--ink);border:1px solid var(--line);border-radius:6px;padding:9px 11px;box-sizing:border-box;color:var(--text)}
+input[type=text],input[type=number],textarea{width:100%}
+input:focus,textarea:focus,select:focus{border-color:var(--mustard);outline:none}
+.disclaimer{color:var(--muted);font-size:12.5px}
+
+/* Bunting title: one paper flag per letter */
+.bunting{display:flex;flex-wrap:nowrap;justify-content:center;gap:.12em;font-family:var(--f-display);line-height:1}
+.bunting span{display:grid;place-items:center;width:1.05em;height:1.25em;background:var(--c);color:var(--fg);border-radius:2px;transform:translateY(var(--y)) rotate(var(--r))}
+
+/* ---------- Home ---------- */
+#view-home{min-height:100%;display:grid;place-items:center;padding-block:40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));box-sizing:border-box}
+.home{display:grid;gap:40px;justify-items:center;width:min(720px,100%)}
+.home .bunting{font-size:clamp(26px,7.5vw,62px)}
+.home .roles{width:min(520px,100%)}
+.roles{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%}
+.role{background:var(--paper);color:var(--on-paper);border:0;border-radius:3px;padding:18px 16px;font-family:var(--f-display);font-size:24px;transition:transform .15s}
+.role:nth-child(1){transform:rotate(-1deg)}
+.role:nth-child(2){transform:rotate(1deg)}
+.role:hover{transform:rotate(0) translateY(-2px)}
+@media (max-width:420px){.roles{grid-template-columns:1fr}}
+
+/* ---------- Host ---------- */
+#view-host{min-height:100%;display:flex;flex-direction:column}
+.h-top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding-block:12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));border-bottom:1px solid var(--line)}
+.h-brand{font-family:var(--f-display);font-size:24px}
+.h-gtitle{color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 160px}
+.pills{display:flex;gap:12px;flex-wrap:wrap}
+.live-hint{margin:18px 0 0;font-family:var(--f-hand);font-size:20px;color:var(--mustard);text-align:center}
+.role.hot{outline:3px solid var(--mustard);outline-offset:3px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
+.pill i{width:7px;height:7px;border-radius:50%;background:var(--line)}
+.pill.on i{background:var(--teal)}
+.pill.warn i{background:var(--mustard)}
+.row-gap{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.h-grid{flex:1;display:grid;grid-template-columns:260px minmax(0,1fr) 310px;gap:16px;padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));align-items:start}
+@media (max-width:1180px){.h-grid{grid-template-columns:230px minmax(0,1fr)}.h-right{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}}
+@media (max-width:760px){.h-grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--ink-2);border:1px solid var(--line);border-radius:8px;padding:14px;display:grid;gap:12px;min-width:0}
+.panel>header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.h-right{display:grid;gap:16px}
+.qlist{display:grid;gap:14px;max-height:calc(100vh - 140px);overflow:auto}
+.qround{display:grid;gap:2px}
+.qbtn{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:auto 1fr auto;gap:0 8px;padding:7px 9px;border-radius:5px}
+.qbtn:hover{background:var(--ink-3)}
+.qbtn:focus-visible{outline:2px solid var(--mustard)}
+.qbtn.sel{background:var(--ink-3);box-shadow:inset 3px 0 0 var(--mustard)}
+.qbtn .qn{font-size:12px;color:var(--muted);padding-top:2px}
+.qbtn .qc{font-weight:600;font-size:13px}
+.qbtn .qp{grid-column:2/4;font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qbtn .qs{font-size:11.5px;color:var(--muted)}
+.qbtn .qs.air{color:var(--teal);font-weight:600}
+.qcard{display:grid;gap:8px;background:var(--paper);color:var(--on-paper);border-radius:3px;padding:16px 18px}
+.qcard .label{color:var(--paper-muted)}
+.qcard .inline-field{color:var(--paper-muted)}
+.qcard select{background:var(--paper-2);color:var(--on-paper);border-color:#cbbf9f}
+.qcard .cat{justify-self:start;background:var(--red);color:var(--paper);font-family:var(--f-hand);font-size:16px;text-transform:uppercase;letter-spacing:.04em;padding:1px 10px;border-radius:2px;transform:rotate(-1.5deg)}
+.qcard h2{font-family:var(--f-display);font-size:clamp(26px,3vw,36px);line-height:1.08}
+.qcard .info{color:var(--paper-muted);font-size:14px}
+.airbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;border:1px dashed var(--line);border-radius:6px;padding:9px 12px}
+.airbar.live{border-style:solid;border-color:var(--teal)}
+.airbar b{color:var(--teal)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--ink);border-radius:999px;padding:6px 12px;font-weight:600;font-size:13px}
+.chip.on{background:var(--mustard);border-color:var(--mustard);color:var(--on-paper)}
+.chip small{font-weight:500;opacity:.7;margin-left:6px}
+.entry{display:grid;gap:8px}
+.entry-row{display:flex;gap:8px;flex-wrap:wrap}
+.entry-row input{flex:1 1 220px;font-size:17px}
+.sugg{display:grid;gap:4px}
+.sugg button{all:unset;box-sizing:border-box;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 12px;border-radius:6px;background:var(--ink);border:1px solid var(--line)}
+.sugg button.hi{border-color:var(--mustard)}
+.sugg button:focus-visible{outline:2px solid var(--mustard)}
+.sugg .sc{font-family:var(--f-display);font-size:20px;font-variant-numeric:tabular-nums}
+.sugg .tag{font-size:11px;color:var(--mustard);margin-left:8px}
+.keys{font-size:12.5px;color:var(--muted)}
+.empty{color:var(--muted);font-size:13px}
+.log{display:grid;gap:4px;margin:0;padding:0;list-style:none}
+.log li{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:6px 10px;border-radius:5px;background:var(--ink)}
+.log .who{font-weight:600}
+.log .what{color:var(--muted)}
+.log .pts{font-family:var(--f-display);font-size:20px;font-variant-numeric:tabular-nums}
+.log .pts.zero{color:var(--mustard)}
+.log .pts.bad{color:#ff8a76}
+.sheet{width:100%;border-collapse:collapse;font-size:13.5px}
+.sheet-wrap{overflow:auto;border:1px solid var(--line);border-radius:6px}
+.sheet th{position:sticky;top:0;background:var(--ink-3);text-align:left;font-weight:600;font-size:12px;color:var(--muted);padding:7px 10px}
+.sheet td{padding:6px 10px;border-top:1px solid var(--line)}
+.sheet td.n{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.sheet tbody tr{cursor:pointer}
+.sheet tbody tr:hover td{background:var(--ink-3)}
+.sheet tbody tr.picked td{background:color-mix(in srgb,var(--mustard) 20%,transparent)}
+.sheet tr.given td{color:var(--muted);text-decoration:line-through}
+.sheet tr.zero td.n{color:var(--mustard)}
+.sheet .al{color:var(--muted);font-size:11.5px}
+.seg{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.seg button{background:var(--ink);border:1px solid var(--line);border-radius:6px;padding:9px 10px;font-weight:600;text-align:left}
+.seg button small{display:none}
+.seg button.on{background:var(--mustard);border-color:var(--mustard);color:var(--on-paper)}
+.teams{display:grid;gap:6px}
+.lockline{background:color-mix(in srgb,var(--mustard) 14%,transparent);border:1px solid var(--mustard);border-radius:6px;padding:8px 12px;font-size:14px}
+.trow{display:grid;grid-template-columns:minmax(0,1fr) 68px auto auto;gap:6px;align-items:center}
+.trow input[type=number]{text-align:right;font-variant-numeric:tabular-nums;padding:8px}
+.trow.out input{opacity:.45}
+.mini{background:transparent;border:1px solid var(--line);border-radius:5px;padding:6px 8px;font-size:12px;color:var(--muted)}
+.mini.on{color:#ff8a76;border-color:var(--red)}
+.inline-field{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.inline-field select{flex:1 1 160px;min-width:0;padding:6px 8px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--paper);color:var(--on-paper);border-radius:3px;padding:9px 16px;opacity:0;transition:.25s;pointer-events:none;z-index:50;max-width:calc(100vw - 40px)}
+.toast.show{opacity:1;transform:translateX(-50%)}
+
+/* Audience screen popover */
+.popwrap{position:relative}
+.scrpop{position:absolute;right:0;top:calc(100% + 8px);z-index:30;width:min(300px,calc(100vw - 32px));background:var(--paper);color:var(--on-paper);border-radius:3px;padding:14px;display:grid;gap:10px;box-shadow:0 8px 0 rgba(0,0,0,.25)}
+.scrpop .btn.primary{text-align:center;text-decoration:none}
+.pop-row{display:flex;gap:6px}
+.pop-row input{background:var(--paper-2);color:var(--on-paper);border-color:#cbbf9f;font-size:12px;padding:6px 8px;min-width:0}
+.pop-row .btn{background:var(--on-paper);color:var(--paper);border-color:var(--on-paper)}
+.pop-qr{justify-self:center}
+.pop-code{text-align:center;font-size:13px;opacity:.75;margin:4px 0 6px}
+.pop-code b{font-family:var(--f-display);font-size:30px;letter-spacing:.12em;color:inherit;display:block;opacity:1}
+.pop-qr:empty{display:none}
+.pop-qr img,.pop-qr canvas{display:block}
+.pop-note{font-size:12.5px;color:var(--paper-muted)}
+
+/* Import modal */
+.modal{position:fixed;inset:0;background:color-mix(in srgb,var(--ink) 80%,transparent);display:grid;place-items:center;z-index:40;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px}
+.modal .box{background:var(--ink-2);border:1px solid var(--line);border-radius:8px;width:min(860px,100%);max-height:calc(100vh - 32px);overflow:auto;padding:20px;display:grid;gap:14px;box-sizing:border-box}
+.modal h2{font-family:var(--f-display);font-size:28px}
+.modal textarea{min-height:180px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;resize:vertical}
+.modal pre{background:var(--ink);border:1px solid var(--line);border-radius:6px;padding:10px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;overflow:auto;margin:0;max-height:220px}
+.fmt{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.fmt>div{display:grid;gap:6px;min-width:0}
+.err{color:#ff8a76;font-weight:600}
+.drop{border:1px dashed var(--line);border-radius:6px;padding:14px;text-align:center;color:var(--muted)}
+.drop.over{border-color:var(--mustard);color:var(--text)}
+.drop label{color:var(--mustard);cursor:pointer;text-decoration:underline}
+.ai{display:grid;gap:10px;border-top:1px solid var(--line);padding-top:14px}
+.ai-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.ai-fields label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+#m-prompt{min-height:150px}
+
+/* ---------- Audience ---------- */
+#view-aud{height:100%}
+.aud{position:relative;height:100%;display:flex;flex-direction:column;overflow:hidden;background-color:var(--ink);
+  background-image:radial-gradient(color-mix(in srgb,var(--text) 7%,transparent) 1px,transparent 1.6px);background-size:18px 18px}
+.aud-bar{position:relative;z-index:2;display:flex;align-items:center;gap:16px;padding-block:14px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+.aud-brand{font-family:var(--f-display);font-size:clamp(20px,2.2vw,30px)}
+.aud-meta{font-family:var(--f-hand);font-size:clamp(14px,1.4vw,20px);text-transform:uppercase;letter-spacing:.03em;color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.aud-tools{display:flex;gap:6px;transition:opacity .4s}
+.aud.idle .aud-tools{opacity:0}
+.aud-tools button{background:var(--ink-2);border:1px solid var(--line);border-radius:5px;padding:5px 10px;font-size:12px;color:var(--muted)}
+.aud-tools button.on{color:var(--mustard);border-color:var(--mustard)}
+.scr{position:relative;z-index:1;flex:1;min-height:0;display:none;padding-bottom:max(20px,env(safe-area-inset-bottom,0px));padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+.scr.on{display:flex}
+
+/* waiting + title */
+.scr-wait,.scr-title{flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:28px}
+.scr-wait p{color:var(--muted);margin:0;font-family:var(--f-hand);font-size:clamp(16px,1.6vw,22px)}
+.a-join{display:flex;gap:10px}
+.a-join input{font-family:var(--f-display);font-size:clamp(28px,4vw,48px);width:5.2ch;text-align:center;letter-spacing:.12em;text-transform:uppercase;background:var(--paper);color:var(--on-paper);border:0;border-radius:4px;padding:4px 8px}
+.scr-wait .bunting,.scr-title .bunting{font-size:clamp(26px,7vw,104px)}
+.title-game{font-family:var(--f-display);font-size:clamp(20px,2.6vw,38px)}
+.title-teams{display:flex;flex-wrap:wrap;justify-content:center;gap:12px}
+.title-teams span{background:var(--paper);color:var(--on-paper);border-radius:2px;padding:6px 16px;font-weight:600;font-size:clamp(14px,1.4vw,20px);animation:rise .5s both}
+.title-teams span:nth-child(odd){transform:rotate(-1.5deg)}
+.title-teams span:nth-child(even){transform:rotate(1.5deg)}
+
+/* question stage */
+.scr-q{gap:clamp(16px,2.5vw,40px)}
+.colwrap{flex:0 0 clamp(92px,12vw,170px);display:flex;flex-direction:column;gap:12px;min-height:0}
+.readout{font-family:var(--f-display);font-variant-numeric:tabular-nums;font-size:clamp(46px,7vw,112px);line-height:.95;text-align:center;color:var(--text)}
+.readout.zero{color:var(--mustard)}
+.readout.bad{color:var(--red)}
+.tube-area{flex:1;min-height:120px;display:grid;grid-template-columns:auto 1fr;gap:8px}
+.ticks{position:relative;width:2em;font-size:clamp(10px,.85vw,13px);color:var(--muted);font-variant-numeric:tabular-nums}
+.ticks span{position:absolute;right:0;transform:translateY(50%)}
+.tube{position:relative;border-radius:4px;overflow:hidden;background:var(--ink-3);border:2px solid var(--line)}
+.fill{position:absolute;left:0;right:0;bottom:0;height:calc(var(--v,100) * 1%);
+  background:repeating-linear-gradient(0deg,var(--blue) 0 calc(var(--seg) - 2px),var(--ink-3) calc(var(--seg) - 2px) var(--seg))}
+.fill::after{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:var(--paper)}
+.tube.zero{border-color:var(--mustard);background:color-mix(in srgb,var(--mustard) 22%,var(--ink-3))}
+.tube.zero .fill{display:none}
+.tube.bad{border-color:var(--red)}
+.tube.warm .fill{background:repeating-linear-gradient(0deg,var(--teal) 0 calc(var(--seg) - 2px),var(--ink-3) calc(var(--seg) - 2px) var(--seg))}
+.tube.hot{border-color:var(--mustard)}
+.tube.hot .fill{background:repeating-linear-gradient(0deg,var(--mustard) 0 calc(var(--seg) - 2px),var(--ink-3) calc(var(--seg) - 2px) var(--seg))}
+.readout.tick{animation:tick .2s ease-out}
+.readout.land{animation:land .5s cubic-bezier(.2,1.6,.4,1)}
+@keyframes tick{from{transform:scale(1.16)}}
+@keyframes land{from{transform:scale(1.4)}}
+/* tension: the room darkens at the edges below 10 */
+.aud::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:3;box-shadow:inset 0 0 0 0 rgba(0,0,0,0);transition:box-shadow .8s}
+.aud.tense::after{box-shadow:inset 0 0 22vmin 8vmin rgba(4,5,20,.7)}
+/* pointless celebration: a short flashing colour wash and the word in bunting */
+.party{position:absolute;inset:0;z-index:4;display:grid;place-items:center;pointer-events:none}
+.party.go{animation:wash .6s steps(1) 4}
+.party .bunting{font-size:clamp(30px,7.5vw,130px)}
+.party.go .bunting span{animation:flagin .5s cubic-bezier(.2,1.5,.4,1) both}
+.party.fade{opacity:0;transition:opacity .45s}
+@keyframes wash{0%{background:color-mix(in srgb,var(--mustard) 14%,transparent)}25%{background:color-mix(in srgb,var(--red) 11%,transparent)}50%{background:color-mix(in srgb,var(--teal) 11%,transparent)}75%{background:color-mix(in srgb,var(--blue) 12%,transparent)}}
+@keyframes flagin{from{opacity:0;transform:translateY(-60px) rotate(0)}}
+/* small live scoreboard, top right */
+.minis{position:absolute;z-index:2;top:calc(env(safe-area-inset-top,0px) + 62px);right:max(20px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:4px;list-style:none;margin:0;padding:0;min-width:clamp(130px,12vw,190px)}
+.minis li{display:flex;justify-content:space-between;gap:12px;align-items:baseline;background:var(--ink-2);border:1px solid var(--line);border-radius:3px;padding:3px 10px;font-size:clamp(12px,1vw,15px);white-space:nowrap}
+.minis b{font-family:var(--f-display);font-weight:400;font-size:1.3em;font-variant-numeric:tabular-nums}
+.minis li:first-child b{color:var(--mustard)}
+.minis li.cur{background:var(--paper);color:var(--on-paper);border-color:var(--paper)}
+.minis li.cur b{color:var(--on-paper)}
+.tube.bad .fill{background:repeating-linear-gradient(0deg,var(--red) 0 calc(var(--seg) - 2px),var(--ink-3) calc(var(--seg) - 2px) var(--seg))}
+
+.qmain{flex:1;min-width:0;min-height:0;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:clamp(10px,1.8vh,22px);overflow:hidden}
+.a-cat{justify-self:start;background:var(--red);color:var(--paper);font-family:var(--f-hand);text-transform:uppercase;letter-spacing:.04em;font-size:clamp(16px,1.6vw,24px);padding:2px 14px;border-radius:2px;transform:rotate(-2deg)}
+.a-prompt{font-family:var(--f-display);font-size:clamp(26px,min(4.4vw,8vh),74px);line-height:1.05;max-width:min(24ch,calc(100% - clamp(150px,14vw,210px)));transition:font-size .4s}
+.a-note{font-family:var(--f-hand);font-size:clamp(15px,min(1.5vw,2.6vh),24px);line-height:1.25;opacity:.8;max-width:min(52ch,calc(100% - clamp(150px,14vw,210px)))}
+.anim-in .a-note{animation:rise .45s .14s both}
+.qmain.has-card .a-prompt{font-size:clamp(22px,min(3.2vw,5.6vh),54px)}
+.anim-in .a-cat{animation:slidein .35s both}
+.anim-in .a-prompt{animation:rise .45s .08s both}
+@keyframes slidein{from{opacity:0;transform:translateX(-24px) rotate(-2deg)}}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}}
+.reveal{align-self:end;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:20px;background:var(--paper);color:var(--on-paper);border-radius:3px;padding:clamp(12px,2vh,22px) clamp(16px,2vw,28px);transform:rotate(-.3deg);box-shadow:0 6px 0 rgba(0,0,0,.25)}
+.reveal[hidden]{display:none!important}
+.rv-team{font-family:var(--f-hand);font-size:clamp(15px,1.4vw,22px);text-transform:uppercase;letter-spacing:.03em;color:var(--paper-muted)}
+.rv-ans{font-family:var(--f-display);font-size:clamp(26px,min(4.4vw,8.5vh),76px);line-height:1.05;overflow-wrap:anywhere}
+.reveal.waiting .rv-ans{font-family:var(--f-hand);color:var(--paper-muted)}
+.reveal.locked{box-shadow:0 6px 0 rgba(0,0,0,.25),0 0 0 4px var(--mustard)}
+.rv-ans.pop{animation:pop .4s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes pop{from{opacity:0;transform:scale(.85)}}
+.rv-flag{font-family:var(--f-display);font-size:clamp(24px,3.4vw,54px);line-height:1;padding:.12em .4em;border-radius:2px;opacity:0;transform:rotate(3deg)}
+.rv-flag:empty{display:none}
+.rv-flag.show{animation:stamp .45s cubic-bezier(.2,1.6,.4,1) both}
+.rv-flag.zero{background:var(--mustard);color:var(--on-paper)}
+.rv-flag.bad{background:var(--red);color:var(--paper)}
+.rv-flag.close{background:var(--teal);color:var(--on-paper)}
+@keyframes stamp{from{opacity:0;transform:scale(1.7) rotate(-6deg)}to{opacity:1;transform:rotate(3deg)}}
+.board{display:flex;flex-wrap:nowrap;overflow:hidden;gap:8px;list-style:none;margin:0;padding:0;min-height:1.6em}
+.board li{flex:none;white-space:nowrap;display:flex;align-items:baseline;gap:10px;background:var(--ink-2);border:1px solid var(--line);border-radius:4px;padding:5px 12px;font-size:clamp(13px,1.15vw,17px);animation:rise .4s both}
+.board .bt{color:var(--muted);font-size:.85em}
+.board .bs{font-family:var(--f-display);font-size:1.35em;font-variant-numeric:tabular-nums}
+.board li.zero{border-color:var(--mustard)}
+.board li.zero .bs{color:var(--mustard)}
+.board li.bad .bs{color:#ff8a76}
+
+/* answers */
+.scr-ans{flex-direction:column;gap:18px}
+.scr-ans h2,.scr-stand h2{font-family:var(--f-display);font-size:clamp(28px,3.6vw,54px);line-height:1.05}
+.ans-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(160px,20vw,280px),1fr));gap:10px;align-content:start;overflow:auto;min-height:0}
+.ans{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--paper);color:var(--on-paper);border-radius:3px;padding:clamp(8px,1.2vh,14px) 16px;font-weight:600;font-size:clamp(14px,1.5vw,22px)}
+.ans b{font-family:var(--f-display);font-weight:400;font-size:1.5em;font-variant-numeric:tabular-nums}
+.ans.zero{background:var(--mustard)}
+.ans.flip{animation:flipin .5s both}
+@keyframes flipin{from{opacity:0;transform:perspective(600px) rotateX(-80deg)}}
+
+/* standings */
+.scr-stand{flex-direction:column;gap:18px}
+.stand-sub{font-family:var(--f-hand);font-size:clamp(16px,1.6vw,24px);text-transform:uppercase;letter-spacing:.03em;color:var(--muted);margin-top:-10px}
+.stand{list-style:none;margin:0;padding:0;display:grid;gap:8px;max-width:1200px;width:100%;overflow:auto;min-height:0}
+.stand li{position:relative;display:grid;grid-template-columns:var(--cols);align-items:center;gap:14px;background:var(--ink-2);border:1px solid var(--line);border-radius:4px;padding:clamp(8px,1.4vh,16px) 16px;font-size:clamp(15px,1.7vw,26px)}
+.stand .pos{font-family:var(--f-hand);color:var(--muted)}
+.stand .nm{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stand li.head{background:none;border-color:transparent;padding-block:0;font-family:var(--f-hand);text-transform:uppercase;color:var(--muted)}
+.stand li.head>span{font-size:.7em}
+.stand .qc{text-align:center;font-variant-numeric:tabular-nums;font-size:.85em}
+.stand .qc.z{color:var(--mustard);font-weight:700}
+.stand .qc.w{color:#ff8a76}
+.stand .qc.na{color:var(--line)}
+.stand li.lead .qc.z{color:#a36a00}
+.stand li.lead .qc.w{color:#b8321f}
+.stand .rd{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.stand li.lead .rd{color:var(--paper-muted)}
+.stand li.head .qc,.stand li.head .rd,.stand li.head .sc{font-family:var(--f-hand);font-size:1em;color:var(--muted)}
+.stand .stamp{position:absolute;right:18%;top:50%;font-family:var(--f-display);background:var(--red);color:var(--paper);padding:0 .4em;border-radius:2px;transform:translateY(-50%) rotate(-5deg);font-size:1.1em}
+.stand li.elim{animation:elimrow .9s .35s both}
+.stand li.elim .stamp{animation:stampin .4s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes stampin{from{opacity:0;transform:translateY(-50%) scale(2.2) rotate(-12deg)}}
+@keyframes elimrow{0%,30%{opacity:1;transform:none}10%{transform:translateX(-8px)}20%{transform:translateX(8px)}100%{opacity:.45}}
+@keyframes grow{from{transform:scaleX(0)}}
+.stand .sc{font-family:var(--f-display);font-size:1.5em;text-align:right;font-variant-numeric:tabular-nums}
+.stand li.lead{background:var(--paper);color:var(--on-paper);border-color:var(--paper)}
+.stand li.lead .pos{color:var(--paper-muted)}
+.stand li.lead .bar{background:var(--paper-2)}
+.stand li.out{opacity:.45}
+#a-fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
+@media (max-width:640px){
+  .minis{display:none}
+  .stand li{grid-template-columns:1.6em minmax(0,1fr) 3em!important}
+  .stand .qc,.stand .rd{display:none}
+  .reveal{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+</style>
+
+<!-- ============ HOME ============ -->
+<section id="view-home">
+  <div class="home">
+    <div class="bunting" data-word="Pointless"></div>
+    <div class="roles">
+      <button class="role" id="go-host" type="button">Host</button>
+      <button class="role" id="go-aud" type="button">Screen</button>
+    </div>
+    <p class="live-hint" id="home-live" hidden>A game is live. Tap Screen to follow it.</p>
+  </div>
+</section>
+
+<!-- ============ HOST ============ -->
+<section id="view-host" hidden>
+  <div class="h-top">
+    <span class="h-brand">Pointless</span>
+    <span class="h-gtitle" id="h-gtitle"></span>
+    <div class="pills">
+      <span class="pill on" id="pill-local" title="Other windows in this browser"><i></i>This browser</span>
+      <span class="pill" id="pill-save" title="The game is saved in this browser and backed up to your Claude account, so refreshing or a new version of the app picks up where you left off"><i></i>Saved here</span>
+      <span class="pill" id="pill-room" title="Audience screens on other devices"><i></i>Other devices: connecting</span>
+    </div>
+    <div class="row-gap">
+      <button class="btn sm ghost to-menu" type="button">Menu</button>
+      <button class="btn sm" id="h-load" type="button">Load game</button>
+      <div class="popwrap">
+        <button class="btn sm primary" id="h-screen" type="button" aria-expanded="false" aria-controls="h-pop">Audience screen</button>
+        <div class="scrpop" id="h-pop" hidden>
+          <a class="btn primary" id="pop-open" href="#audience" target="_blank" rel="noopener">Open in a new window</a>
+          <div class="pop-row"><input type="text" id="pop-url" readonly aria-label="Audience screen link"><button class="btn sm" id="pop-copy" type="button">Copy</button></div>
+          <div class="pop-code" id="pop-code" hidden></div>
+          <div class="pop-qr" id="pop-qr"></div>
+          <div class="pop-note" id="pop-note">Drag the new window to the projector, then press Full screen. The QR code opens the screen on a phone or tablet signed in to your account.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="h-grid">
+    <aside class="panel">
+      <header><span class="label">Questions</span><span class="mono" id="h-qcount"></span></header>
+      <div class="qlist" id="h-qlist"></div>
+    </aside>
+
+    <main class="panel" style="gap:16px">
+      <div class="qcard" id="h-qcard"></div>
+      <div class="airbar" id="h-airbar"></div>
+      <div class="entry" id="h-entry">
+        <span class="label">Answering team</span>
+        <div class="chips" id="h-tchips"></div>
+        <div class="entry-row">
+          <input type="text" id="h-ans" placeholder="Type the team's answer…" autocomplete="off" spellcheck="false" aria-label="Team's answer">
+          <button class="btn primary" id="h-lock" type="button">Lock in</button>
+          <button class="btn primary" id="h-reveal" type="button" hidden>Reveal</button>
+        </div>
+        <div class="row-gap">
+          <button class="btn sm danger" id="h-wrong" type="button" title="Rule it wrong: scores 100">Incorrect · 100</button>
+          <button class="btn sm gold" id="h-zero" type="button" title="Correct but not on the sheet: so rare it scores 0">Not on sheet · Pointless 0</button>
+          <button class="btn sm ghost" id="h-unlock" type="button" hidden>Unlock</button>
+        </div>
+        <div class="lockline" id="h-lockline" hidden></div>
+        <div class="keys">Enter locks the guess in and shows it on screen · Enter again reveals · Tab autofill · ↑ ↓ pick · Esc clear</div>
+        <div class="sugg" id="h-sugg"></div>
+      </div>
+      <div style="display:grid;gap:8px">
+        <header style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <span class="label">Revealed this question</span>
+          <button class="btn sm ghost" id="h-undo" type="button">Undo last</button>
+        </header>
+        <ul class="log" id="h-log"></ul>
+      </div>
+      <details open>
+        <summary class="label" style="cursor:pointer" id="h-sheethead">Answer sheet (host only)</summary>
+        <div class="sheet-wrap" style="margin-top:8px"><table class="sheet" id="h-sheet"></table></div>
+      </details>
+    </main>
+
+    <div class="h-right">
+      <section class="panel">
+        <header><span class="label">Audience screen shows</span></header>
+        <div class="seg" id="h-screens">
+          <button type="button" data-s="title">Title<small>Game name and teams</small></button>
+          <button type="button" data-s="question">Question<small>Column and reveals</small></button>
+          <button type="button" data-s="answers">Answers<small>Lowest-scoring answers</small></button>
+          <button type="button" data-s="standings">Standings<small>Running totals</small></button>
+        </div>
+      </section>
+      <section class="panel">
+        <header><span class="label">Teams · lowest total wins</span><button class="btn sm" id="h-addteam" type="button">Add team</button></header>
+        <div class="teams" id="h-teams"></div>
+        <label class="inline-field" for="h-order">Turn order
+          <select id="h-order">
+            <option value="show">Like the show: round 1 rotates, then leader first</option>
+            <option value="worst">Catch-up: highest score goes first</option>
+            <option value="fixed">Fixed: team list order</option>
+          </select>
+        </label>
+        <label class="inline-field" for="h-elim">Eliminations
+          <select id="h-elim">
+            <option value="off">Off: everyone plays every question</option>
+            <option value="question">Highest scorer after each question</option>
+            <option value="round">Highest scorer after each round</option>
+          </select>
+        </label>
+        <div class="row-gap"><button class="btn sm danger" id="h-reset" type="button">Reset scores</button></div>
+      </section>
+    </div>
+  </div>
+  <div class="modal" id="h-modal" hidden>
+    <div class="box" role="dialog" aria-modal="true" aria-labelledby="m-title">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <h2 id="m-title">Load a game</h2>
+        <button class="btn sm ghost" id="m-close" type="button">Close</button>
+      </div>
+      <div class="drop" id="m-drop">Drop a .json or .csv file here, or <label>choose a file<input type="file" id="m-file" accept=".json,.csv,.txt,application/json,text/csv" hidden></label></div>
+      <textarea id="m-text" placeholder="…or paste JSON or CSV here" spellcheck="false" aria-label="Game data"></textarea>
+      <div class="err" id="m-err" hidden></div>
+      <div class="row-gap">
+        <button class="btn primary" id="m-apply" type="button">Load and start fresh</button>
+        <button class="btn" id="m-append" type="button">Add as extra rounds</button>
+        <button class="btn" id="m-sample" type="button">Load the sample game</button>
+        <button class="btn ghost" id="m-copy" type="button">Copy current game as JSON</button>
+      </div>
+      <div class="disclaimer">Start fresh resets scores. Extra rounds keeps the game going and adds them at the end.</div>
+      <div class="ai">
+        <span class="label">AI prompt</span>
+        <div class="disclaimer">Paste the JSON it returns into the box above. If it gets cut off, ask for one round at a time.</div>
+        <div class="ai-fields">
+          <label for="ai-theme">Theme or topics<input type="text" id="ai-theme" placeholder="Anything, or e.g. 90s pop culture"></label>
+          <label for="ai-crowd">Players are<input type="text" id="ai-crowd" value="UK adults at a game night"></label>
+          <label for="ai-rounds">Rounds<input type="number" id="ai-rounds" value="3" min="1" max="10"></label>
+          <label for="ai-q">Questions per round<input type="number" id="ai-q" value="2" min="1" max="10"></label>
+          <label for="ai-min">Minimum answers per question<input type="number" id="ai-min" value="40" min="20" max="200"></label>
+        </div>
+        <textarea id="m-prompt" readonly spellcheck="false" aria-label="AI prompt"></textarea>
+        <div class="row-gap"><button class="btn primary" id="m-copyprompt" type="button">Copy prompt</button></div>
+      </div>
+      <div class="fmt">
+        <div><span class="label">JSON</span><pre id="m-json"></pre></div>
+        <div><span class="label">CSV · one row per answer</span><pre id="m-csv"></pre>
+          <span class="disclaimer">Columns: round, category, prompt, answer, score, aliases (| separated), info, passes. Only prompt, answer and score are required.</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+</section>
+
+<!-- ============ AUDIENCE ============ -->
+<section id="view-aud" hidden>
+  <div class="aud" id="aud">
+    <div class="aud-bar">
+      <span class="aud-brand">Pointless</span>
+      <span class="aud-meta" id="a-meta"></span>
+      <span class="aud-tools">
+        <button type="button" id="a-sound">Sound off</button>
+        <button type="button" id="a-fs">Full screen</button>
+        <button type="button" class="to-menu">Menu</button>
+      </span>
+    </div>
+    <ol class="minis" id="a-minis" aria-label="Scores, lowest first" hidden></ol>
+    <div class="scr scr-wait on" data-s="wait">
+      <div class="bunting" data-word="Pointless"></div>
+      <p id="a-waitmsg">Waiting for the host…</p>
+      <form class="a-join" id="a-join" hidden autocomplete="off">
+        <input id="a-code" maxlength="4" placeholder="CODE" aria-label="Join code" autocapitalize="characters" spellcheck="false">
+        <button class="btn primary" type="submit">Join</button>
+      </form>
+    </div>
+    <div class="scr scr-title" data-s="title">
+      <div class="bunting" data-word="Pointless"></div>
+      <div class="title-game" id="a-title"></div>
+      <div class="title-teams" id="a-tteams"></div>
+    </div>
+    <div class="scr scr-q" data-s="question">
+      <div class="colwrap">
+        <div class="readout" id="a-read">100</div>
+        <div class="tube-area">
+          <div class="ticks" id="a-ticks"></div>
+          <div class="tube" id="a-tube"><div class="fill" id="a-fill"></div></div>
+        </div>
+      </div>
+      <div class="qmain" id="a-qmain">
+        <span class="a-cat" id="a-cat"></span>
+        <div class="a-prompt" id="a-prompt"></div>
+        <div class="a-note" id="a-note" hidden></div>
+        <div class="reveal" id="a-reveal" hidden>
+          <div style="min-width:0">
+            <div class="rv-team" id="a-rvteam"></div>
+            <div class="rv-ans" id="a-rvans"></div>
+          </div>
+          <div class="rv-flag" id="a-flag"></div>
+        </div>
+        <ul class="board" id="a-board"></ul>
+      </div>
+    </div>
+    <div class="scr scr-ans" data-s="answers">
+      <h2 id="a-anshead">The answers</h2>
+      <div class="ans-grid" id="a-ans"></div>
+    </div>
+    <div class="scr scr-stand" data-s="standings">
+      <h2>Standings</h2>
+      <div class="stand-sub" id="a-standsub"></div>
+      <ol class="stand" id="a-stand"></ol>
+    </div>
+    <div class="party" id="a-party" hidden><div class="bunting" data-word="Pointless!"></div></div>
+    <canvas id="a-fx"></canvas>
+  </div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(() => {
+'use strict';
+/* ================= Sample game ================= */
+const SAMPLE = {"title":"Game night 1","rounds":[{"name":"Round 1","questions":[{"category":"Geography","prompt":"Name any capital city of a European country","info":"Capitals of Europe's sovereign states incl. Vatican City and Kosovo (Pristina). Transcontinental: Moscow, Ankara, Baku, Tbilisi, Yerevan, Nicosia count; Astana doesn't. Scores from real recall data: https://www.jetpunk.com/quizzes/name-world-capitals/stats (5,356,507 plays).","passes":1,"answers":[{"text":"Paris","score":96},{"text":"London","score":91},{"text":"Rome","score":90},{"text":"Berlin","score":88},{"text":"Madrid","score":85},{"text":"Moscow","score":83},{"text":"Athens","score":80},{"text":"Dublin","score":77},{"text":"Vatican City","score":76,"aliases":["Vatican"]},{"text":"Amsterdam","score":71},{"text":"Lisbon","score":70,"aliases":["Lisboa"]},{"text":"Oslo","score":69},{"text":"Vienna","score":68,"aliases":["Wien"]},{"text":"Brussels","score":67},{"text":"Kyiv","score":65,"aliases":["Kiev"]},{"text":"Copenhagen","score":62,"aliases":["København"]},{"text":"Monaco","score":61,"aliases":["Monte Carlo"]},{"text":"Budapest","score":58},{"text":"Warsaw","score":57,"aliases":["Warszawa"]},{"text":"Helsinki","score":54},{"text":"Prague","score":53,"aliases":["Praha"]},{"text":"Stockholm","score":52},{"text":"Luxembourg","score":50,"aliases":["Luxembourg City"]},{"text":"Sofia","score":49},{"text":"Bern","score":46,"aliases":["Berne"]},{"text":"Reykjavík","score":43,"aliases":["Reykjavik"]},{"text":"San Marino","score":42,"aliases":["City of San Marino"]},{"text":"Zagreb","score":37},{"text":"Bucharest","score":34,"aliases":["Bucuresti"]},{"text":"Minsk","score":33},{"text":"Ankara","score":31},{"text":"Tirana","score":29},{"text":"Riga","score":25},{"text":"Sarajevo","score":22},{"text":"Tallinn","score":21},{"text":"Belgrade","score":18,"aliases":["Beograd"]},{"text":"Andorra la Vella","score":14,"aliases":["Andorra"]},{"text":"Bratislava","score":12},{"text":"Baku","score":10},{"text":"Ljubljana","score":6},{"text":"Valletta","score":5},{"text":"Vilnius","score":4},{"text":"Skopje","score":0},{"text":"Vaduz","score":0},{"text":"Pristina","score":0,"aliases":["Prishtina"]},{"text":"Tbilisi","score":0},{"text":"Nicosia","score":0},{"text":"Chișinău","score":0,"aliases":["Chisinau","Kishinev"]},{"text":"Podgorica","score":0},{"text":"Yerevan","score":0}]},{"category":"Film","prompt":"Name any Walt Disney Animation Studios feature film","info":"Official Walt Disney Animation Studios canon, Snow White (1937) to Zootopia 2 (2025). Pixar films and live-action remakes don't count. Scores from real recall data: https://jetpunk.com/quizzes/disney-animated-movies-quiz/stats (475,452 plays).","passes":1,"answers":[{"text":"Snow White and the Seven Dwarfs","score":96,"aliases":["Snow White"]},{"text":"Cinderella","score":92},{"text":"Beauty and the Beast","score":85},{"text":"Frozen","score":83},{"text":"Sleeping Beauty","score":80},{"text":"The Little Mermaid","score":79,"aliases":["Little Mermaid"]},{"text":"Aladdin","score":76},{"text":"Mulan","score":74},{"text":"The Lion King","score":73,"aliases":["Lion King"]},{"text":"Tangled","score":72},{"text":"Moana","score":70},{"text":"Frozen 2","score":67,"aliases":["Frozen II"]},{"text":"Pocahontas","score":66},{"text":"The Princess and the Frog","score":64,"aliases":["Princess and the Frog"]},{"text":"Fantasia","score":56},{"text":"One Hundred and One Dalmatians","score":55,"aliases":["101 Dalmatians","One Hundred and One Dalmations"]},{"text":"Pinocchio","score":54},{"text":"Bambi","score":52},{"text":"Encanto","score":51},{"text":"Peter Pan","score":50},{"text":"The Jungle Book","score":49,"aliases":["Jungle Book"]},{"text":"Dumbo","score":48},{"text":"Lady and the Tramp","score":46},{"text":"Moana 2","score":44},{"text":"Hercules","score":42},{"text":"Tarzan","score":40},{"text":"The Aristocats","score":39,"aliases":["Aristocats"]},{"text":"Lilo & Stitch","score":37,"aliases":["Lilo and Stitch"]},{"text":"Wreck-It Ralph","score":36,"aliases":["Wreck It Ralph"]},{"text":"Robin Hood","score":34},{"text":"The Hunchback of Notre Dame","score":33,"aliases":["Hunchback of Notre Dame"]},{"text":"Zootopia","score":31,"aliases":["Zootropolis"]},{"text":"Alice in Wonderland","score":30},{"text":"The Fox and the Hound","score":28,"aliases":["Fox and the Hound"]},{"text":"The Many Adventures of Winnie the Pooh","score":26,"aliases":["Many Adventures of Winnie the Pooh"]},{"text":"Winnie the Pooh","score":25},{"text":"Wish","score":24},{"text":"Atlantis: The Lost Empire","score":20,"aliases":["Atlantis"]},{"text":"Big Hero 6","score":19},{"text":"Raya and the Last Dragon","score":18},{"text":"The Rescuers","score":17,"aliases":["Rescuers"]},{"text":"The Sword in the Stone","score":16,"aliases":["Sword in the Stone"]},{"text":"The Emperor's New Groove","score":15,"aliases":["Emperor's New Groove","The Emperors New Groove"]},{"text":"Bolt","score":13},{"text":"Brother Bear","score":12},{"text":"The Black Cauldron","score":11,"aliases":["Black Cauldron"]},{"text":"Treasure Planet","score":10},{"text":"Zootopia 2","score":9,"aliases":["Zootropolis 2"]},{"text":"Fantasia 2000","score":7},{"text":"Ralph Breaks the Internet","score":6,"aliases":["Wreck-It Ralph 2","Ralph Wrecks the Internet"]},{"text":"The Rescuers Down Under","score":5,"aliases":["Rescuers Down Under"]},{"text":"Chicken Little","score":3},{"text":"Oliver & Company","score":2,"aliases":["Oliver and Company"]},{"text":"The Great Mouse Detective","score":1,"aliases":["Great Mouse Detective","Basil the Great Mouse Detective"]},{"text":"Dinosaur","score":0},{"text":"Meet the Robinsons","score":0},{"text":"The Three Caballeros","score":0,"aliases":["Three Caballeros"]},{"text":"Home on the Range","score":0},{"text":"Strange World","score":0},{"text":"The Adventures of Ichabod and Mr. Toad","score":0,"aliases":["Ichabod and Mr. Toad","Adventures of Ichabod and Mr Toad"]},{"text":"Make Mine Music","score":0},{"text":"Saludos Amigos","score":0},{"text":"Fun and Fancy Free","score":0},{"text":"Melody Time","score":0}]},{"category":"History","prompt":"Name any President of the United States","info":"Any person who has served as US President, Washington to Trump. Grover Cleveland and Donald Trump count once each. Surname alone is fine where unambiguous; Adams, Johnson, Roosevelt, Harrison and Bush need a first name or initial. Scores from real recall data: https://www.jetpunk.com/quizzes/name-us-presidents/stats (3,976,339 plays).","passes":1,"answers":[{"text":"Donald Trump","score":98,"aliases":["Trump"]},{"text":"Barack Obama","score":95,"aliases":["Obama"]},{"text":"Joe Biden","score":94,"aliases":["Biden","Joseph Biden"]},{"text":"George Washington","score":92,"aliases":["Washington"]},{"text":"George H.W. Bush","score":87,"aliases":["George H. W. Bush","George HW Bush","Bush Sr","George Bush Senior","HW Bush"]},{"text":"George W. Bush","score":86,"aliases":["George W Bush","Bush Jr","George Bush Junior","Dubya"]},{"text":"Abraham Lincoln","score":84,"aliases":["Lincoln","Abe Lincoln"]},{"text":"John F. Kennedy","score":81,"aliases":["JFK","John Kennedy","Kennedy"]},{"text":"Bill Clinton","score":79,"aliases":["Clinton","William Clinton"]},{"text":"Franklin D. Roosevelt","score":76,"aliases":["FDR","Franklin Roosevelt","Franklin Delano Roosevelt"]},{"text":"Theodore Roosevelt","score":73,"aliases":["Teddy Roosevelt","Theodore Roosevelt"]},{"text":"Ronald Reagan","score":70,"aliases":["Reagan"]},{"text":"Richard Nixon","score":66,"aliases":["Nixon"]},{"text":"John Adams","score":61},{"text":"John Quincy Adams","score":60,"aliases":["JQ Adams","J.Q. Adams"]},{"text":"Thomas Jefferson","score":58,"aliases":["Jefferson"]},{"text":"Lyndon B. Johnson","score":55,"aliases":["LBJ","Lyndon Johnson"]},{"text":"Dwight D. Eisenhower","score":51,"aliases":["Eisenhower","Dwight Eisenhower","Ike"]},{"text":"Jimmy Carter","score":50,"aliases":["Carter","James Carter"]},{"text":"Andrew Johnson","score":48},{"text":"Harry Truman","score":45,"aliases":["Truman","Harry S. Truman"]},{"text":"Gerald R. Ford","score":43,"aliases":["Gerald Ford","Ford"]},{"text":"Andrew Jackson","score":39,"aliases":["Jackson"]},{"text":"Herbert Hoover","score":37,"aliases":["Hoover"]},{"text":"Woodrow Wilson","score":33,"aliases":["Wilson"]},{"text":"James Madison","score":29,"aliases":["Madison"]},{"text":"Ulysses S. Grant","score":28,"aliases":["Grant","Ulysses Grant"]},{"text":"William Taft","score":25,"aliases":["Taft","William Howard Taft"]},{"text":"James Monroe","score":23,"aliases":["Monroe"]},{"text":"Calvin Coolidge","score":18,"aliases":["Coolidge"]},{"text":"William Henry Harrison","score":17,"aliases":["W.H. Harrison"]},{"text":"Benjamin Harrison","score":14},{"text":"Grover Cleveland","score":13,"aliases":["Cleveland"]},{"text":"James Garfield","score":12,"aliases":["Garfield"]},{"text":"James K. Polk","score":10,"aliases":["Polk","James Polk"]},{"text":"Martin Van Buren","score":6,"aliases":["Van Buren"]},{"text":"William McKinley","score":5,"aliases":["McKinley"]},{"text":"John Tyler","score":3,"aliases":["Tyler"]},{"text":"Zachary Taylor","score":2,"aliases":["Taylor"]},{"text":"James Buchanan","score":0,"aliases":["Buchanan"]},{"text":"Warren Harding","score":0,"aliases":["Harding","Warren G. Harding"]},{"text":"Franklin Pierce","score":0,"aliases":["Pierce"]},{"text":"Millard Fillmore","score":0,"aliases":["Fillmore"]},{"text":"Rutherford B. Hayes","score":0,"aliases":["Hayes","Rutherford Hayes"]},{"text":"Chester A. Arthur","score":0,"aliases":["Chester Arthur","Arthur"]}]}]},{"name":"Round 2","questions":[{"category":"Geography","prompt":"Name any country in Asia","info":"48 Asian states: UN geoscheme Asia (minus Palestine, not on the source list) plus Taiwan. Transcontinental Turkey, Kazakhstan, Georgia, Armenia, Azerbaijan and Cyprus count; Russia and Egypt do not. Palestine not on the source list. Source filtered from JetPunk Countries of the World quiz. Scores from real recall data: https://www.jetpunk.com/quizzes/how-many-countries-can-you-name/stats (50,407,464 plays).","passes":1,"answers":[{"text":"China","score":96},{"text":"India","score":92},{"text":"Japan","score":91},{"text":"South Korea","score":85,"aliases":["Korea","Republic of Korea"]},{"text":"North Korea","score":83,"aliases":["DPRK"]},{"text":"Turkey","score":81,"aliases":["Türkiye","Turkiye"]},{"text":"Iran","score":78},{"text":"Iraq","score":74},{"text":"Pakistan","score":71},{"text":"Mongolia","score":69},{"text":"Indonesia","score":65},{"text":"Saudi Arabia","score":64},{"text":"Thailand","score":63},{"text":"Afghanistan","score":59},{"text":"Israel","score":58},{"text":"Vietnam","score":57},{"text":"Kazakhstan","score":54},{"text":"Philippines","score":51},{"text":"Nepal","score":47},{"text":"United Arab Emirates","score":44,"aliases":["UAE"]},{"text":"Yemen","score":43},{"text":"Oman","score":40},{"text":"Syria","score":39},{"text":"Sri Lanka","score":37},{"text":"Malaysia","score":35},{"text":"Jordan","score":31},{"text":"Laos","score":30,"aliases":["Lao"]},{"text":"Taiwan","score":29,"aliases":["Republic of China"]},{"text":"Bangladesh","score":27},{"text":"Cambodia","score":26},{"text":"Uzbekistan","score":25},{"text":"Georgia","score":22},{"text":"Cyprus","score":20},{"text":"Qatar","score":19},{"text":"Myanmar","score":16,"aliases":["Burma"]},{"text":"Turkmenistan","score":14},{"text":"Armenia","score":12},{"text":"Lebanon","score":10},{"text":"Azerbaijan","score":7},{"text":"Singapore","score":6},{"text":"Bhutan","score":4},{"text":"Kuwait","score":0},{"text":"Tajikistan","score":0},{"text":"Kyrgyzstan","score":0},{"text":"Maldives","score":0},{"text":"Bahrain","score":0},{"text":"Brunei","score":0,"aliases":["Brunei Darussalam"]},{"text":"East Timor","score":0,"aliases":["Timor-Leste"]}]},{"category":"Film","prompt":"Name any film that won the Oscar for Best Picture","info":"Academy Award Best Picture winners, Wings (1927/28 ceremony 1929) to Anora (2025 ceremony). Nominees that didn't win don't count. Scores from real recall data: https://www.jetpunk.com/quizzes/name-best-picture-winners/stats (336,466 plays).","passes":1,"answers":[{"text":"Oppenheimer","score":84},{"text":"Titanic","score":82},{"text":"Parasite","score":81},{"text":"The Godfather","score":80,"aliases":["Godfather"]},{"text":"Moonlight","score":79},{"text":"Anora","score":78},{"text":"Everything Everywhere All at Once","score":77,"aliases":["Everything Everywhere"]},{"text":"The Lord of the Rings: The Return of the King","score":76,"aliases":["The Return of the King","Return of the King","Lord of the Rings"]},{"text":"Forrest Gump","score":75},{"text":"Gone with the Wind","score":74},{"text":"Green Book","score":73},{"text":"Schindler's List","score":72,"aliases":["Schindlers List"]},{"text":"The Godfather Part II","score":71,"aliases":["Godfather Part II","The Godfather Part 2","Godfather 2","Godfather II"]},{"text":"Casablanca","score":70},{"text":"Gladiator","score":69},{"text":"The Shape of Water","score":68,"aliases":["Shape of Water"]},{"text":"CODA","score":67},{"text":"Nomadland","score":66},{"text":"The Silence of the Lambs","score":65,"aliases":["Silence of the Lambs"]},{"text":"Birdman","score":64,"aliases":["Birdman or (The Unexpected Virtue of Ignorance)"]},{"text":"12 Years a Slave","score":63,"aliases":["Twelve Years a Slave"]},{"text":"Argo","score":62},{"text":"Crash","score":61},{"text":"Spotlight","score":60},{"text":"The Departed","score":59,"aliases":["Departed"]},{"text":"The King's Speech","score":58,"aliases":["King's Speech","The Kings Speech"]},{"text":"No Country for Old Men","score":57},{"text":"The Artist","score":56},{"text":"Slumdog Millionaire","score":55},{"text":"Chicago","score":54},{"text":"American Beauty","score":53},{"text":"Rocky","score":52},{"text":"Shakespeare in Love","score":51},{"text":"The Hurt Locker","score":50,"aliases":["Hurt Locker"]},{"text":"Ben-Hur","score":49,"aliases":["Ben Hur"]},{"text":"Million Dollar Baby","score":48},{"text":"The Sound of Music","score":47,"aliases":["Sound of Music"]},{"text":"Braveheart","score":46},{"text":"A Beautiful Mind","score":45,"aliases":["Beautiful Mind"]},{"text":"One Flew Over the Cuckoo's Nest","score":44,"aliases":["One Flew Over the Cuckoos Nest"]},{"text":"Rain Man","score":43},{"text":"Kramer vs. Kramer","score":42,"aliases":["Kramer vs Kramer","Kramer versus Kramer"]},{"text":"Amadeus","score":41},{"text":"Dances with Wolves","score":40},{"text":"Gandhi","score":39},{"text":"Platoon","score":38},{"text":"The English Patient","score":37,"aliases":["English Patient"]},{"text":"Driving Miss Daisy","score":36},{"text":"Lawrence of Arabia","score":35},{"text":"Unforgiven","score":34},{"text":"Wings","score":33},{"text":"All Quiet on the Western Front","score":32},{"text":"Out of Africa","score":31},{"text":"The Deer Hunter","score":30,"aliases":["Deer Hunter"]},{"text":"West Side Story","score":29},{"text":"Annie Hall","score":28},{"text":"Chariots of Fire","score":27},{"text":"Patton","score":26},{"text":"The French Connection","score":25,"aliases":["French Connection"]},{"text":"The Last Emperor","score":24,"aliases":["Last Emperor"]},{"text":"The Sting","score":23,"aliases":["Sting"]},{"text":"Hamlet","score":22},{"text":"My Fair Lady","score":21},{"text":"Oliver!","score":20,"aliases":["Oliver"]},{"text":"On the Waterfront","score":19},{"text":"The Bridge on the River Kwai","score":18,"aliases":["Bridge on the River Kwai"]},{"text":"Midnight Cowboy","score":17},{"text":"Ordinary People","score":16},{"text":"Terms of Endearment","score":15},{"text":"The Apartment","score":14,"aliases":["Apartment"]},{"text":"All About Eve","score":13},{"text":"Gigi","score":12},{"text":"It Happened One Night","score":11},{"text":"Marty","score":10},{"text":"Rebecca","score":9},{"text":"An American in Paris","score":8,"aliases":["American in Paris"]},{"text":"Around the World in Eighty Days","score":7,"aliases":["Around the World in 80 Days"]},{"text":"How Green Was My Valley","score":6},{"text":"In the Heat of the Night","score":5},{"text":"Cimarron","score":4},{"text":"Grand Hotel","score":3},{"text":"Mrs. Miniver","score":2,"aliases":["Mrs Miniver"]},{"text":"Tom Jones","score":1},{"text":"All the King's Men","score":0,"aliases":["All the Kings Men"]},{"text":"A Man for All Seasons","score":0,"aliases":["Man for All Seasons"]},{"text":"Cavalcade","score":0},{"text":"From Here to Eternity","score":0},{"text":"The Best Years of Our Lives","score":0,"aliases":["Best Years of Our Lives"]},{"text":"The Broadway Melody","score":0,"aliases":["Broadway Melody"]},{"text":"The Greatest Show on Earth","score":0,"aliases":["Greatest Show on Earth"]},{"text":"Going My Way","score":0},{"text":"Mutiny on the Bounty","score":0},{"text":"The Great Ziegfeld","score":0,"aliases":["Great Ziegfeld"]},{"text":"The Life of Emile Zola","score":0,"aliases":["Life of Emile Zola"]},{"text":"The Lost Weekend","score":0,"aliases":["Lost Weekend"]},{"text":"You Can't Take It with You","score":0,"aliases":["You Cant Take It with You"]},{"text":"Gentleman's Agreement","score":0,"aliases":["Gentlemans Agreement"]}]},{"category":"Everyday","prompt":"Name any of the 50 biggest fast-food chains in the US","info":"JetPunk's list of the 50 most popular US fast-food / quick-service chains (incl. coffee chains like Starbucks and Dunkin'). Restaurants outside that list don't count. Scores from real recall data: https://www.jetpunk.com/quizzes/name-fast-food-restaurants/stats (692,700 plays).","passes":1,"answers":[{"text":"McDonald's","score":98,"aliases":["McDonalds"]},{"text":"Starbucks","score":96},{"text":"Burger King","score":93},{"text":"Dunkin'","score":88,"aliases":["Dunkin","Dunkin Donuts","Dunkin' Donuts"]},{"text":"KFC","score":86,"aliases":["Kentucky Fried Chicken"]},{"text":"Taco Bell","score":85},{"text":"Domino's","score":82,"aliases":["Dominos","Domino's Pizza"]},{"text":"Subway","score":81},{"text":"Pizza Hut","score":80},{"text":"Wendy's","score":75,"aliases":["Wendys"]},{"text":"Chick-fil-A","score":69,"aliases":["Chick fil A","Chickfila"]},{"text":"Chipotle","score":65,"aliases":["Chipotle Mexican Grill"]},{"text":"Panda Express","score":61},{"text":"Popeyes","score":60,"aliases":["Popeye's"]},{"text":"In-N-Out","score":56,"aliases":["In N Out","In-N-Out Burger","In and Out"]},{"text":"Papa John's","score":52,"aliases":["Papa Johns"]},{"text":"Five Guys","score":47,"aliases":["5 Guys"]},{"text":"Dairy Queen","score":45},{"text":"Arby's","score":43,"aliases":["Arbys"]},{"text":"Little Caesars","score":42,"aliases":["Little Caesar's"]},{"text":"Raising Cane's","score":40,"aliases":["Raising Canes","Canes"]},{"text":"Crumbl","score":38,"aliases":["Crumbl Cookies"]},{"text":"Jersey Mike's","score":35,"aliases":["Jersey Mikes"]},{"text":"Carl's Jr.","score":31,"aliases":["Carls Jr","Carl's Jr"]},{"text":"Hardee's","score":30,"aliases":["Hardees"]},{"text":"Auntie Anne's","score":29,"aliases":["Auntie Annes"]},{"text":"Jimmy John's","score":28,"aliases":["Jimmy Johns"]},{"text":"Sonic","score":26,"aliases":["Sonic Drive-In"]},{"text":"Whataburger","score":25},{"text":"Shake Shack","score":24,"aliases":["Shakeshack"]},{"text":"Jack in the Box","score":22},{"text":"Panera","score":20,"aliases":["Panera Bread"]},{"text":"Wingstop","score":17},{"text":"Del Taco","score":15},{"text":"Tim Hortons","score":14,"aliases":["Tim Horton's","Tim Horton"]},{"text":"Culver's","score":12,"aliases":["Culvers"]},{"text":"Firehouse Subs","score":11},{"text":"Church's Chicken","score":9,"aliases":["Church's","Churchs"]},{"text":"Qdoba","score":8},{"text":"Zaxby's","score":7,"aliases":["Zaxbys"]},{"text":"Cava","score":5},{"text":"Bojangles","score":2,"aliases":["Bojangles'"]},{"text":"Tropical Smoothie Cafe","score":1,"aliases":["Tropical Smoothie"]},{"text":"Checkers/Rally's","score":0,"aliases":["Checkers","Rally's","Rallys"]},{"text":"Dutch Bros","score":0,"aliases":["Dutch Bros Coffee","Dutch Brothers"]},{"text":"Freddy's","score":0,"aliases":["Freddys","Freddy's Frozen Custard"]},{"text":"El Pollo Loco","score":0},{"text":"Marco's Pizza","score":0,"aliases":["Marco's","Marcos"]},{"text":"McAlister's Deli","score":0,"aliases":["McAlister's","McAlisters"]},{"text":"Krispy Krunchy Chicken","score":0}]}]},{"name":"Round 3","questions":[{"category":"Sport","prompt":"Name any club that has played in the English Premier League","info":"All 51 clubs to have played at least one Premier League season since 1992-93 (incl. Wimbledon, Swindon, Oldham, Barnsley). Clubs that only played in the old First Division don't count. Scores from real recall data: https://www.jetpunk.com/user-quizzes/24961/all-premier-league-teams-ever/stats (280,362 plays).","passes":1,"answers":[{"text":"Arsenal","score":97},{"text":"Manchester City","score":96,"aliases":["Man City"]},{"text":"Manchester United","score":95,"aliases":["Man United","Man Utd","Manchester Utd"]},{"text":"Liverpool","score":92},{"text":"Chelsea","score":90},{"text":"Tottenham Hotspur","score":87,"aliases":["Tottenham","Spurs"]},{"text":"Aston Villa","score":84},{"text":"Wolverhampton Wanderers","score":78,"aliases":["Wolverhampton","Wolves"]},{"text":"Everton","score":77},{"text":"Newcastle United","score":76,"aliases":["Newcastle"]},{"text":"West Ham United","score":75,"aliases":["West Ham"]},{"text":"Leicester City","score":74,"aliases":["Leicester"]},{"text":"Brighton & Hove Albion","score":72,"aliases":["Brighton & Hove","Brighton","Brighton and Hove Albion"]},{"text":"Leeds United","score":67,"aliases":["Leeds"]},{"text":"Nottingham Forest","score":66,"aliases":["Forest","Nottm Forest"]},{"text":"Crystal Palace","score":64},{"text":"Southampton","score":63},{"text":"Bournemouth","score":60,"aliases":["AFC Bournemouth"]},{"text":"Fulham","score":59},{"text":"Burnley","score":56},{"text":"Sunderland","score":55},{"text":"Brentford","score":53},{"text":"Blackburn Rovers","score":48,"aliases":["Blackburn"]},{"text":"Luton Town","score":47,"aliases":["Luton"]},{"text":"Norwich City","score":46,"aliases":["Norwich"]},{"text":"Sheffield United","score":45,"aliases":["Sheff Utd","Sheffield Utd"]},{"text":"Birmingham City","score":43,"aliases":["Birmingham"]},{"text":"Swansea City","score":39,"aliases":["Swansea"]},{"text":"Cardiff City","score":37,"aliases":["Cardiff"]},{"text":"Ipswich Town","score":36,"aliases":["Ipswich"]},{"text":"Queens Park Rangers","score":34,"aliases":["QPR"]},{"text":"Sheffield Wednesday","score":31,"aliases":["Sheff Wed"]},{"text":"West Bromwich Albion","score":29,"aliases":["West Bromwich","West Brom","WBA"]},{"text":"Hull City","score":26,"aliases":["Hull"]},{"text":"Portsmouth","score":21},{"text":"Derby County","score":19,"aliases":["Derby"]},{"text":"Bolton Wanderers","score":16,"aliases":["Bolton"]},{"text":"Stoke City","score":15,"aliases":["Stoke"]},{"text":"Watford","score":14},{"text":"Blackpool","score":11},{"text":"Middlesbrough","score":10},{"text":"Coventry City","score":8,"aliases":["Coventry"]},{"text":"Wigan Athletic","score":2,"aliases":["Wigan"]},{"text":"Huddersfield Town","score":0,"aliases":["Huddersfield"]},{"text":"Wimbledon","score":0,"aliases":["Wimbledon FC"]},{"text":"Charlton Athletic","score":0,"aliases":["Charlton"]},{"text":"Reading","score":0},{"text":"Barnsley","score":0},{"text":"Bradford City","score":0,"aliases":["Bradford"]},{"text":"Oldham Athletic","score":0,"aliases":["Oldham"]},{"text":"Swindon Town","score":0,"aliases":["Swindon"]}]},{"category":"Literature","prompt":"Name any of the 100 most-mentioned characters in the Harry Potter books","info":"The 100 characters mentioned most often across the seven Harry Potter novels, including pets, ghosts and portraits. Family members need a first name (e.g. 'Fred Weasley', not 'Weasley'). Scores from real recall data: https://www.jetpunk.com/user-quizzes/69506/top-100-harry-potter-characters-by-mention/stats (424,742 plays).","passes":1,"answers":[{"text":"Harry Potter","score":98,"aliases":["Harry"]},{"text":"Hermione Granger","score":97,"aliases":["Hermione"]},{"text":"Ron Weasley","score":96,"aliases":["Ron","Ronald Weasley"]},{"text":"Albus Dumbledore","score":94,"aliases":["Dumbledore"]},{"text":"Severus Snape","score":92,"aliases":["Snape"]},{"text":"Voldemort","score":91,"aliases":["Lord Voldemort","Tom Riddle","You-Know-Who"]},{"text":"Draco Malfoy","score":89,"aliases":["Draco"]},{"text":"Rubeus Hagrid","score":87,"aliases":["Hagrid"]},{"text":"Fred Weasley","score":84,"aliases":["Fred"]},{"text":"George Weasley","score":83,"aliases":["George"]},{"text":"Ginny Weasley","score":82,"aliases":["Ginny","Ginevra Weasley"]},{"text":"Minerva McGonagall","score":81,"aliases":["McGonagall","Professor McGonagall"]},{"text":"Sirius Black","score":80,"aliases":["Sirius"]},{"text":"Neville Longbottom","score":79,"aliases":["Neville"]},{"text":"James Potter","score":77},{"text":"Lily Potter","score":76,"aliases":["Lily Evans"]},{"text":"Remus Lupin","score":75,"aliases":["Lupin"]},{"text":"Luna Lovegood","score":74,"aliases":["Luna"]},{"text":"Lucius Malfoy","score":73,"aliases":["Lucius"]},{"text":"Bellatrix Lestrange","score":71,"aliases":["Bellatrix"]},{"text":"Molly Weasley","score":70,"aliases":["Mrs Weasley"]},{"text":"Cedric Diggory","score":68,"aliases":["Cedric"]},{"text":"Peter Pettigrew","score":67,"aliases":["Pettigrew","Wormtail","Scabbers"]},{"text":"Cho Chang","score":65,"aliases":["Cho"]},{"text":"Dobby","score":64},{"text":"Katie Bell","score":63},{"text":"Alastor \"Mad Eye\" Moody","score":62,"aliases":["Mad-Eye Moody","Mad Eye Moody","Alastor Moody","Moody"]},{"text":"Arthur Weasley","score":61,"aliases":["Mr Weasley"]},{"text":"Dudley Dursley","score":60,"aliases":["Dudley"]},{"text":"Percy Weasley","score":59,"aliases":["Percy"]},{"text":"Dolores Umbridge","score":58,"aliases":["Umbridge"]},{"text":"Bill Weasley","score":57},{"text":"Viktor Krum","score":56,"aliases":["Krum","Victor Krum"]},{"text":"Fleur Delacour","score":55,"aliases":["Fleur"]},{"text":"Gregory Goyle","score":54,"aliases":["Goyle"]},{"text":"Vincent Crabbe","score":53,"aliases":["Crabbe"]},{"text":"Petunia Dursley","score":52,"aliases":["Aunt Petunia"]},{"text":"Charlie Weasley","score":51},{"text":"Nymphadora Tonks","score":50,"aliases":["Tonks"]},{"text":"Seamus Finnigan","score":49,"aliases":["Seamus"]},{"text":"Filius Flitwick","score":48,"aliases":["Flitwick"]},{"text":"Vernon Dursley","score":47,"aliases":["Uncle Vernon"]},{"text":"Hedwig","score":46},{"text":"Dean Thomas","score":44},{"text":"Gilderoy Lockhart","score":43,"aliases":["Lockhart"]},{"text":"Narcissa Malfoy","score":42,"aliases":["Narcissa"]},{"text":"Quirinus Quirrell","score":40,"aliases":["Quirrell","Professor Quirrell"]},{"text":"Bartemius Crouch, Sr.","score":38,"aliases":["Barty Crouch","Barty Crouch Sr","Bartemius Crouch"]},{"text":"Cornelius Fudge","score":37,"aliases":["Fudge"]},{"text":"Sybill Trelawney","score":36,"aliases":["Trelawney"]},{"text":"Oliver Wood","score":35},{"text":"Nearly Headless Nick","score":33,"aliases":["Sir Nicholas"]},{"text":"Argus Filch","score":32,"aliases":["Filch"]},{"text":"Horace Slughorn","score":31,"aliases":["Slughorn"]},{"text":"Godric Gryffindor","score":30},{"text":"Lavender Brown","score":29},{"text":"Parvati Patil","score":28},{"text":"Pomona Sprout","score":27,"aliases":["Professor Sprout"]},{"text":"Salazar Slytherin","score":26},{"text":"Kingsley Shacklebolt","score":25,"aliases":["Kingsley","Shacklebolt"]},{"text":"Garrick Ollivander","score":24,"aliases":["Ollivander","Mr Ollivander"]},{"text":"Moaning Myrtle","score":23,"aliases":["Myrtle"]},{"text":"Pansy Parkinson","score":22,"aliases":["Pansy"]},{"text":"Angelina Johnson","score":21},{"text":"Kreacher","score":20},{"text":"Peeves","score":19},{"text":"Rita Skeeter","score":18,"aliases":["Skeeter"]},{"text":"Colin Creevey","score":17},{"text":"Crookshanks","score":16},{"text":"Poppy Pomfrey","score":15,"aliases":["Madam Pomfrey"]},{"text":"Xenophilius Lovegood","score":14,"aliases":["Xenophilius"]},{"text":"Igor Karkaroff","score":13,"aliases":["Karkaroff"]},{"text":"Aberforth Dumbledore","score":12,"aliases":["Aberforth"]},{"text":"Buckbeak","score":11,"aliases":["Witherwings"]},{"text":"Fenrir Greyback","score":10,"aliases":["Greyback"]},{"text":"Gellert Grindelwald","score":9,"aliases":["Grindelwald"]},{"text":"Lee Jordan","score":8},{"text":"Olympe Maxime","score":7,"aliases":["Madame Maxime"]},{"text":"Marge Dursley","score":6,"aliases":["Aunt Marge"]},{"text":"Rufus Scrimgeour","score":5,"aliases":["Scrimgeour"]},{"text":"Winky","score":4},{"text":"Bathilda Bagshot","score":3,"aliases":["Bathilda"]},{"text":"Fang","score":2},{"text":"Mundungus Fletcher","score":1,"aliases":["Mundungus","Dung"]},{"text":"Amos Diggory","score":0},{"text":"Firenze","score":0},{"text":"Ludo Bagman","score":0,"aliases":["Bagman"]},{"text":"Frank Bryce","score":0},{"text":"Griphook","score":0},{"text":"The Fat Lady","score":0,"aliases":["Fat Lady"]},{"text":"Cormac McLaggen","score":0,"aliases":["McLaggen"]},{"text":"Ernie MacMillan","score":0,"aliases":["Ernie Macmillan"]},{"text":"Fawkes","score":0},{"text":"Grawp","score":0},{"text":"Marvolo Gaunt","score":0},{"text":"Stan Shunpike","score":0,"aliases":["Stan"]},{"text":"Elphias Doge","score":0,"aliases":["Doge"]},{"text":"Phineas Nigellus Black","score":0,"aliases":["Phineas Nigellus"]},{"text":"Bob Ogden","score":0,"aliases":["Ogden"]},{"text":"Morfin Gaunt","score":0,"aliases":["Morfin"]}]}]},{"name":"Final","questions":[{"category":"Science","prompt":"Name any chemical element on the periodic table","info":"All 118 named elements (hydrogen to oganesson). Element names only, not symbols. Scores from real recall data: https://www.jetpunk.com/quizzes/name-the-elements/stats (2,426,359 plays).","passes":3,"answers":[{"text":"Hydrogen","score":98},{"text":"Oxygen","score":97},{"text":"Helium","score":96},{"text":"Carbon","score":95},{"text":"Gold","score":94},{"text":"Nitrogen","score":93},{"text":"Silver","score":92},{"text":"Iron","score":91},{"text":"Lithium","score":90},{"text":"Neon","score":89},{"text":"Sodium","score":88},{"text":"Potassium","score":87},{"text":"Copper","score":86},{"text":"Magnesium","score":85},{"text":"Boron","score":84},{"text":"Argon","score":83},{"text":"Aluminium","score":82,"aliases":["Aluminum"]},{"text":"Beryllium","score":82},{"text":"Chlorine","score":81},{"text":"Calcium","score":80},{"text":"Fluorine","score":79},{"text":"Sulfur","score":78,"aliases":["Sulphur"]},{"text":"Uranium","score":77},{"text":"Zinc","score":76},{"text":"Phosphorus","score":75},{"text":"Silicon","score":74},{"text":"Xenon","score":73},{"text":"Titanium","score":72},{"text":"Lead","score":71},{"text":"Tin","score":70},{"text":"Mercury","score":69},{"text":"Manganese","score":68},{"text":"Nickel","score":67},{"text":"Cobalt","score":66},{"text":"Iodine","score":65},{"text":"Krypton","score":64},{"text":"Plutonium","score":63},{"text":"Einsteinium","score":62},{"text":"Platinum","score":61},{"text":"Radon","score":60},{"text":"Bromine","score":59},{"text":"Germanium","score":58},{"text":"Radium","score":57},{"text":"Arsenic","score":56},{"text":"Francium","score":55},{"text":"Chromium","score":54},{"text":"Gallium","score":53},{"text":"Tungsten","score":52,"aliases":["Wolfram"]},{"text":"Barium","score":51},{"text":"Caesium","score":50,"aliases":["Cesium"]},{"text":"Selenium","score":50},{"text":"Vanadium","score":49},{"text":"Californium","score":48},{"text":"Scandium","score":47},{"text":"Rubidium","score":46},{"text":"Yttrium","score":45},{"text":"Americium","score":44},{"text":"Palladium","score":43},{"text":"Polonium","score":42},{"text":"Strontium","score":41},{"text":"Curium","score":40},{"text":"Zirconium","score":39},{"text":"Cadmium","score":38},{"text":"Indium","score":37},{"text":"Neptunium","score":36},{"text":"Antimony","score":35},{"text":"Bismuth","score":34},{"text":"Iridium","score":33},{"text":"Rhodium","score":32},{"text":"Astatine","score":31},{"text":"Molybdenum","score":30},{"text":"Rutherfordium","score":29},{"text":"Europium","score":28},{"text":"Osmium","score":27},{"text":"Thallium","score":26},{"text":"Thorium","score":25},{"text":"Bohrium","score":24},{"text":"Actinium","score":23},{"text":"Hafnium","score":22},{"text":"Lanthanum","score":21},{"text":"Niobium","score":20},{"text":"Technetium","score":19},{"text":"Tellurium","score":18},{"text":"Ytterbium","score":17},{"text":"Mendelevium","score":17},{"text":"Oganesson","score":16},{"text":"Ruthenium","score":15},{"text":"Berkelium","score":14},{"text":"Cerium","score":13},{"text":"Lawrencium","score":12},{"text":"Moscovium","score":11},{"text":"Nobelium","score":10},{"text":"Rhenium","score":9},{"text":"Tennessine","score":8},{"text":"Erbium","score":7},{"text":"Neodymium","score":6},{"text":"Tantalum","score":5},{"text":"Fermium","score":4},{"text":"Livermorium","score":3},{"text":"Seaborgium","score":2},{"text":"Terbium","score":1},{"text":"Copernicium","score":0},{"text":"Holmium","score":0},{"text":"Praseodymium","score":0},{"text":"Promethium","score":0},{"text":"Protactinium","score":0},{"text":"Samarium","score":0},{"text":"Thulium","score":0},{"text":"Darmstadtium","score":0},{"text":"Dubnium","score":0},{"text":"Gadolinium","score":0},{"text":"Hassium","score":0},{"text":"Lutetium","score":0},{"text":"Nihonium","score":0},{"text":"Dysprosium","score":0},{"text":"Flerovium","score":0},{"text":"Meitnerium","score":0},{"text":"Roentgenium","score":0}]}]}]};
+
+/* ================= Utilities ================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store = {
+  get(k){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch { return null; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+const LS_HOST = 'pointless.host.v2', LS_LAST = 'pointless.screen.v1';
+const pad2 = n => String(n).padStart(2, '0');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const str = v => (v == null ? '' : String(v)).trim();
+const clampPasses = v => Math.min(5, Math.max(1, Math.round(Number(v)) || 1));
+
+const bc = (() => { try { return new BroadcastChannel('pointless-studio-v1'); } catch { return null; } })();
+let room = null;
+const roomReady = (async () => {
+  try { room = (window.claude && window.claude.use) ? await window.claude.use('room') : null; } catch { room = null; }
+  return room;
+})();
+
+// Account backup of the host's game, so a refresh or a new version of the app never loses it
+const capReady = name => (async () => { try { return (window.claude && window.claude.use) ? await window.claude.use(name) : null; } catch { return null; } })();
+const cloud = (() => {
+  const ready = (async () => {
+    const [db, user] = await Promise.all([capReady('db'), capReady('user')]);
+    if (!db || !user) return null;
+    try { const id = await user.id(); return id ? db.doc('data/users/' + id + '/host') : null; } catch { return null; }
+  })();
+  let busy = false, queued = null;
+  return {
+    ready,
+    async get(){ const ref = await ready; if (!ref) return null; try { const d = await ref.get(); return d.exists ? d.data() : null; } catch { return null; } },
+    async put(body, cb){
+      queued = body; if (busy) return;
+      const ref = await ready; if (!ref){ cb && cb(false); return; }
+      busy = true;
+      while (queued){ const b = queued; queued = null; let ok = false;
+        for (let i = 0; i < 2 && !ok; i++){ try { await ref.set(b); ok = true; } catch (e) { if (!e || e.code !== 'unavailable') break; await sleep(800 + Math.random() * 800); } }
+        cb && cb(ok); }
+      busy = false;
+    }
+  };
+})();
+
+/* Peer-to-peer join codes for when the app runs on its own site (e.g. GitHub Pages), where Claude's room isn't available */
+const P2P = (() => { try { return window.top === window.self && !(window.claude && window.claude.use); } catch { return false; } })();
+const Net = (() => {
+  let lib = null;
+  const load = () => lib || (lib = new Promise((res, rej) => {
+    if (window.Peer) return res(window.Peer);
+    const sc = document.createElement('script'); sc.src = 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js';
+    sc.onload = () => res(window.Peer); sc.onerror = () => { lib = null; rej(new Error('peerjs')); }; document.head.appendChild(sc);
+  }));
+  const pid = code => 'pointless-studio-' + String(code).toLowerCase();
+  const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const newCode = () => Array.from({ length: 4 }, () => CHARS[Math.floor(Math.random() * CHARS.length)]).join('');
+  const cleanCode = c => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+  function host(code, getLast, onStatus){
+    const conns = new Set(); let peer = null, timer = null;
+    const retry = () => { clearTimeout(timer); timer = setTimeout(start, 4000); };
+    async function start(){
+      try { if (peer) peer.destroy(); } catch {}
+      let Peer; try { Peer = await load(); } catch { onStatus('fail', 0); return retry(); }
+      peer = new Peer(pid(code));
+      peer.on('open', () => onStatus('on', conns.size));
+      peer.on('connection', c => {
+        c.on('open', () => { conns.add(c); onStatus('on', conns.size); const l = getLast(); if (l) try { c.send({ k: 'state', p: l }); } catch {} });
+        const gone = () => { conns.delete(c); onStatus('on', conns.size); };
+        c.on('close', gone); c.on('error', gone);
+        c.on('data', d => { if (d && d.k === 'hello'){ const l = getLast(); if (l) try { c.send({ k: 'state', p: l }); } catch {} } });
+      });
+      peer.on('disconnected', () => { onStatus('lost', conns.size); try { peer.reconnect(); } catch { retry(); } });
+      peer.on('error', e => { onStatus(e && e.type === 'unavailable-id' ? 'taken' : 'lost', conns.size); if (!e || e.type !== 'peer-unavailable') retry(); });
+    }
+    start();
+    return { send(p){ conns.forEach(c => { try { c.send({ k: 'state', p }); } catch {} }); } };
+  }
+  function join(code, onState, onStatus){
+    let peer = null, conn = null, timer = null, stopped = false;
+    const again = ms => { clearTimeout(timer); if (!stopped) timer = setTimeout(connect, ms); };
+    function connect(){
+      if (stopped || !peer || !peer.open) return;
+      onStatus('connecting');
+      try { if (conn) conn.close(); } catch {}
+      conn = peer.connect(pid(code), { reliable: true });
+      conn.on('open', () => { onStatus('on'); try { conn.send({ k: 'hello' }); } catch {} });
+      conn.on('data', d => { if (d && d.k === 'state') onState(d.p); });
+      conn.on('close', () => { onStatus('lost'); again(2500); });
+    }
+    (async () => {
+      let Peer; try { Peer = await load(); } catch { onStatus('fail'); return; }
+      peer = new Peer();
+      peer.on('open', connect);
+      peer.on('disconnected', () => { try { peer.reconnect(); } catch {} });
+      peer.on('error', e => { if (e && e.type === 'peer-unavailable'){ onStatus('nohost'); again(3000); } else { onStatus('lost'); again(4000); } });
+    })();
+    return { stop(){ stopped = true; clearTimeout(timer); try { peer && peer.destroy(); } catch {} } };
+  }
+  return { host, join, newCode, cleanCode };
+})();
+const joinParam = (() => { try { return Net.cleanCode(new URLSearchParams(location.search).get('join')); } catch { return ''; } })();
+
+/* ================= Game parsing ================= */
+function normalizeGame(raw){
+  if (Array.isArray(raw)) raw = { questions: raw };
+  if (!raw || typeof raw !== 'object') throw new Error('That is not a game. Expected a JSON object with "rounds".');
+  let rounds = raw.rounds;
+  if (!rounds && Array.isArray(raw.questions)) rounds = [{ name: 'Round 1', questions: raw.questions }];
+  if (!Array.isArray(rounds) || !rounds.length) throw new Error('Add a "rounds" list, or a flat "questions" list.');
+  const game = { title: str(raw.title) || 'Pointless', teams: Array.isArray(raw.teams) ? raw.teams.map(str).filter(Boolean).slice(0, 10) : [], rounds: [] };
+  rounds.forEach((r, ri) => {
+    const qs = r && r.questions;
+    if (!Array.isArray(qs) || !qs.length) throw new Error(`Round ${ri+1} has no questions.`);
+    const R = { name: str(r.name) || `Round ${ri+1}`, questions: [] };
+    qs.forEach((q, qi) => {
+      const where = `${R.name}, question ${qi+1}`;
+      const prompt = str(q && (q.prompt || q.question));
+      if (!prompt) throw new Error(`${where} needs a "prompt".`);
+      let list = q.answers;
+      if (list && !Array.isArray(list) && typeof list === 'object') list = Object.entries(list).map(([text, score]) => ({ text, score }));
+      if (!Array.isArray(list) || !list.length) throw new Error(`${where} has no answers.`);
+      const answers = list.map((a, ai) => {
+        const text = str(a && (a.text || a.answer));
+        const score = Number(a && a.score);
+        if (!text) throw new Error(`${where}: answer ${ai+1} has no text.`);
+        if (a.score === '' || a.score == null || !Number.isFinite(score) || score < 0 || score > 100) throw new Error(`${where}: "${text}" needs a score from 0 to 100.`);
+        const al = Array.isArray(a.aliases) ? a.aliases : (typeof a.aliases === 'string' ? a.aliases.split('|') : []);
+        return { text, score: Math.round(score), aliases: al.map(str).filter(Boolean) };
+      });
+      R.questions.push({ category: str(q.category) || 'General', prompt, info: str(q.info || q.note), note: str(q.note), passes: clampPasses(q.passes ?? raw.passes), answers });
+    });
+    game.rounds.push(R);
+  });
+  return game;
+}
+function parseCSV(text){
+  const rows = []; let row = [], f = '', q = false;
+  for (let i = 0; i < text.length; i++){
+    const c = text[i];
+    if (q){ if (c === '"'){ if (text[i+1] === '"'){ f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ',' || c === '\t' && !text.slice(0, 200).includes(',')){ row.push(f); f = ''; }
+    else if (c === '\n' || c === '\r'){ if (c === '\r' && text[i+1] === '\n') i++; row.push(f); rows.push(row); row = []; f = ''; }
+    else f += c;
+  }
+  if (f || row.length){ row.push(f); rows.push(row); }
+  return rows.filter(r => r.some(x => x.trim()));
+}
+function csvToGame(text){
+  const rows = parseCSV(text);
+  if (rows.length < 2) throw new Error('The CSV needs a header row and at least one answer row.');
+  const head = rows.shift().map(h => h.trim().toLowerCase());
+  const col = n => head.indexOf(n);
+  const ip = col('prompt') >= 0 ? col('prompt') : col('question'), ia = col('answer'), is = col('score');
+  if (ip < 0 || ia < 0 || is < 0) throw new Error('The CSV header needs at least: prompt, answer, score.');
+  const ir = col('round'), ic = col('category'), il = col('aliases'), ii = col('info'), ipa = col('passes');
+  const rounds = new Map();
+  rows.forEach(r => {
+    const rn = str(r[ir]) || 'Round 1', prompt = str(r[ip]);
+    if (!prompt) return;
+    if (!rounds.has(rn)) rounds.set(rn, new Map());
+    const qs = rounds.get(rn);
+    if (!qs.has(prompt)) qs.set(prompt, { category: str(r[ic]), prompt, info: str(r[ii]), passes: 1, answers: [] });
+    const q = qs.get(prompt);
+    if (!q.info && str(r[ii])) q.info = str(r[ii]);
+    if (ipa >= 0 && str(r[ipa])) q.passes = str(r[ipa]);
+    q.answers.push({ text: str(r[ia]), score: str(r[is]), aliases: str(r[il]) });
+  });
+  return normalizeGame({ title: 'Imported game', rounds: [...rounds].map(([name, qs]) => ({ name, questions: [...qs.values()] })) });
+}
+function parseGameText(text){
+  const t = text.trim();
+  if (!t) throw new Error('Paste a game or choose a file first.');
+  if (t[0] === '{' || t[0] === '['){
+    let raw; try { raw = JSON.parse(t); } catch (e) { throw new Error('The JSON could not be read: ' + e.message); }
+    return normalizeGame(raw);
+  }
+  return csvToGame(t);
+}
+
+/* ================= AI prompt ================= */
+function buildPrompt(){
+  const v = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  const theme = v('ai-theme') || 'a broad general-knowledge mix', crowd = v('ai-crowd') || 'UK adults at a game night';
+  const rounds = Math.min(10, Math.max(1, +v('ai-rounds') || 3)), perRound = Math.min(10, Math.max(1, +v('ai-q') || 2));
+  const min = Math.min(200, Math.max(20, +v('ai-min') || 40));
+  return `You are writing questions for a game-night quiz in the style of the BBC show Pointless.
+
+HOW THE GAME WORKS
+Each question asks players to name any one item from a list. Every answer has a score from 0 to 100: the number of people, out of 100 asked, who would name it if given 100 seconds to name as many as they can. Teams want the LOWEST score. A correct answer nobody would name scores 0 ("pointless"). Scores are independent, so they do NOT add up to 100.
+
+WHAT I NEED
+- Theme: ${theme}
+- Players: ${crowd}
+- ${rounds} round${rounds === 1 ? '' : 's'} with ${perRound} question${perRound === 1 ? '' : 's'} each (${rounds * perRound} questions)
+- Every question must have AT LEAST ${min} valid answers, and you must list EVERY valid answer, not a sample. If a list would run past about 200 answers, narrow it (add a letter, a date range or a region).
+
+CHOOSING CATEGORIES AND SCORES (most important)
+Build every question on a closed list that has REAL per-answer recall data. The best source is a type-in list quiz with answer statistics:
+- JetPunk: open the quiz's /stats page (for example https://www.jetpunk.com/quizzes/name-world-capitals/stats) which shows the % of players who got each answer.
+- Sporcle: the quiz results/stats page shows the same thing.
+Use type-in "name all the X" quizzes only (not map, picture, click or hint quizzes), ideally with tens of thousands of plays. You may filter a bigger quiz to a clean subset (world capitals -> only European capitals). Put the quiz URL and the rule for what counts in "info".
+The list must be a natural closed set players can reason about (all IAU constellations, every Person of the Year). No arbitrary "on this quiz's list" sets like a user's "top 100 authors": players can't tell what's on it. Use quizzes with 50,000+ plays, make sure the list is current, and watch for shared-credit artifacts (a rare answer with a suspiciously high %, e.g. Sagitta credited when people typed "Sagittarius").
+If you can't browse, say so at the top and use lists you know completely, with your best estimate of those percentages.
+Vary the subjects across the game (geography, film and TV, music, sport, science, history, food, books, games) unless the theme says otherwise. Avoid open-ended lists, opinions and lists where nobody could name anything.
+
+TURNING % INTO SCORES
+Real Pointless scores have answers in every band, so convert each answer's % like this:
+1. The bottom 15% of answers by % score 0 (pointless). 0 is the only score that may repeat.
+2. Lift the top answer halfway to 100 (91% -> 96). The obvious answers land in the 85 to 98 range: Paris in "European capitals" is a 90+, never a 70.
+3. Spread the rest so every band (1-10, 11-20 ... 71-80, 81+) has several answers, keeping the real order and roughly the real gaps.
+4. NO TWO NON-ZERO ANSWERS MAY SHARE A SCORE. Break ties with the real %, then by whichever is more famous. Only when a question has more non-zero answers than available numbers (pigeonhole) may scores repeat, and then spread them as evenly as possible.
+Before replying, check each question: list the non-zero scores and confirm there are no duplicates.
+
+ALIASES
+Add "aliases" for alternative names, common spellings and short forms (for example "Czechia" for "Czech Republic", "Burma" for "Myanmar").
+
+PASSES
+"passes" is how many answers each team gives on that question. Use 1 for normal questions and 3 for the final question of the game.
+
+CHECK BEFORE ANSWERING
+Make sure every answer is real, is not duplicated, fits the rule in "info", and that every question has at least ${min} answers. Count them.
+
+OUTPUT
+Reply with valid JSON only, no commentary, in exactly this shape:
+{
+  "title": "Game night",
+  "rounds": [
+    { "name": "Round 1", "questions": [
+      { "category": "Geography", "prompt": "Name any country whose name begins with S or T",
+        "info": "UN member states. Source: Wikipedia, List of sovereign states.",
+        "note": "Shown to players: one short line naming the source and any bias, e.g. \"UN members only\".",
+        "passes": 1,
+        "answers": [
+          { "text": "Spain", "score": 88 },
+          { "text": "Timor-Leste", "score": 0, "aliases": ["East Timor"] }
+        ] }
+    ] }
+  ]
+}
+If the full game is too long for one reply, send Round 1 only and wait for me to say "next".`;
+}
+
+/* ================= Answer matching ================= */
+function norm(s){
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/&/g, ' and ').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/^(the|a|an) /, '');
+}
+function lev(a, b){
+  if (a === b) return 0; const m = a.length, n = b.length; if (!m) return n; if (!n) return m;
+  let prev = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++){ const cur = [i]; for (let j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j-1] + 1, prev[j-1] + (a[i-1] === b[j-1] ? 0 : 1)); prev = cur; }
+  return prev[n];
+}
+function findMatches(q, answers){
+  const nq = norm(q); if (!nq) return [];
+  const out = [];
+  answers.forEach((a, i) => {
+    let best = 0;
+    for (const k of [a.text, ...(a.aliases || [])]){
+      const nk = norm(k); if (!nk) continue; let s = 0;
+      if (nk === nq) s = 100;
+      else if (nk.startsWith(nq)) s = 80 - Math.min(20, nk.length - nq.length) / 2;
+      else if (nk.split(' ').some(w => w.startsWith(nq))) s = 62;
+      else if (nq.length >= 3 && nk.includes(nq)) s = 55;
+      else { const d = lev(nq, nk); const tol = nk.length <= 4 ? 1 : nk.length <= 8 ? 2 : 3; if (d <= tol) s = 72 - d * 8; }
+      if (s > best) best = s;
+    }
+    if (best > 0) out.push({ i, s: best });
+  });
+  return out.sort((x, y) => y.s - x.s).slice(0, 6);
+}
+
+/* ================= Routing ================= */
+let mode = null;
+function setMode(m){
+  mode = m;
+  $('#view-home').hidden = m !== 'home';
+  $('#view-host').hidden = m !== 'host';
+  $('#view-aud').hidden = m !== 'audience';
+  try { history.replaceState(null, '', m === 'home' ? location.pathname + location.search : '#' + m); } catch {}
+  try { sessionStorage.setItem('pointless.mode', m); } catch {}
+  if (m !== 'home') store.set('pointless.device', m);
+  if (m === 'host') Host.init();
+  if (m === 'audience') Aud.init();
+}
+$('#go-host').onclick = () => setMode('host');
+$('#go-aud').onclick = () => setMode('audience');
+document.querySelectorAll('.to-menu').forEach(b => b.onclick = () => { store.set('pointless.device', ''); setMode('home'); });
+/* Audience screen link: inside the Claude viewer the page runs in a frame, so link to the artifact itself */
+const ARTIFACT_URL = 'https://claude.ai/artifact/R7hzHgkQrjhJhK19sb1CdW';
+let joinCode = '';
+const screenURL = () => { let framed = true; try { framed = window.top !== window.self; } catch {}
+  if (framed) return ARTIFACT_URL + '#audience';
+  const base = location.origin + location.pathname;
+  return P2P && joinCode ? `${base}?join=${joinCode}#audience` : base + '#audience'; };
+(() => {
+  const btn = $('#h-screen'), pop = $('#h-pop');
+  let qrFor = '';
+  const fill = () => { const u = screenURL(); $('#pop-open').href = u; $('#pop-url').value = u; return u; };
+  fill();
+  const close = () => { pop.hidden = true; btn.setAttribute('aria-expanded', 'false'); };
+  btn.onclick = ev => {
+    ev.stopPropagation(); pop.hidden = !pop.hidden; btn.setAttribute('aria-expanded', String(!pop.hidden));
+    const u = fill();
+    if (!pop.hidden && qrFor !== u && window.QRCode){
+      try { $('#pop-qr').innerHTML = ''; new QRCode($('#pop-qr'), { text: u, width: 148, height: 148, colorDark: '#1b1d45', colorLight: '#efe6d2', correctLevel: QRCode.CorrectLevel.M }); qrFor = u; } catch {}
+    }
+    const jc = $('#pop-code'); if (jc){ jc.hidden = !(P2P && joinCode); jc.innerHTML = `Join code <b>${esc(joinCode)}</b>`; }
+    const pn = $('#pop-note'); if (pn && P2P) pn.textContent = 'Drag the new window to the projector, then press Full screen. Friends can scan the QR code, or open this site on any device, pick Screen and type the join code.';
+  };
+  pop.addEventListener('click', ev => ev.stopPropagation());
+  document.addEventListener('click', close);
+  addEventListener('keydown', ev => { if (ev.key === 'Escape') close(); });
+  $('#pop-open').addEventListener('click', () => setTimeout(close, 100));
+  $('#pop-copy').onclick = () => {
+    const inp = $('#pop-url'), b = $('#pop-copy');
+    const ok = () => { b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1500); };
+    const fb = () => { inp.focus(); inp.select(); };
+    try { navigator.clipboard.writeText(screenURL()).then(ok, fb); } catch { fb(); }
+  };
+})();
+
+/* ================= HOST ================= */
+const Host = (() => {
+  let net = null;
+  let S, inited = false, sel = { r: 0, q: 0 }, team = null, hits = [], hi = 0, last = null, t = 0, lock = null;
+  const sid = Math.random().toString(36).slice(2, 10);
+  const mkId = () => Math.random().toString(36).slice(2, 9);
+
+  function fresh(game, keepNames){
+    const names = game.teams && game.teams.length ? game.teams : (keepNames && keepNames.length ? keepNames : ['Team 1', 'Team 2', 'Team 3', 'Team 4']);
+    return { game, teams: names.map(n => ({ id: mkId(), name: n, score: 0, out: false })), cur: null, screen: 'title', logs: {}, nextId: 1, elim: 'off', elimDone: {} };
+  }
+  function load(){
+    const s = store.get(LS_HOST);
+    if (s && s.game && Array.isArray(s.teams)){ try { s.game = normalizeGame(s.game); return s; } catch {} }
+    return fresh(normalizeGame(SAMPLE));
+  }
+  const key = (p) => p ? `${p.r}.${p.q}` : '';
+  const Q = (p) => p && S.game.rounds[p.r] && S.game.rounds[p.r].questions[p.q];
+  const onAir = () => S.cur && S.cur.r === sel.r && S.cur.q === sel.q;
+  const teamName = id => (S.teams.find(x => x.id === id) || { name: 'Team' }).name;
+  function progress(p){
+    const q = Q(p), alive = S.teams.filter(x => !x.out).length || 1, n = (S.logs[key(p)] || []).length, passes = q ? q.passes : 1;
+    return { pass: Math.min(passes, Math.floor(n / alive) + 1), passes, left: Math.max(0, passes * alive - n), done: n >= passes * alive };
+  }
+  function elimCandidate(){
+    if (!S.elim || S.elim === 'off' || !S.cur || (S.elimDone || {})[key(S.cur)]) return null;
+    if (!progress(S.cur).done) return null;
+    const r = S.game.rounds[S.cur.r];
+    if (S.elim === 'round' && S.cur.q !== r.questions.length - 1) return null;
+    const alive = S.teams.filter(x => !x.out); if (alive.length < 2) return null;
+    const keys = S.elim === 'round' ? r.questions.map((_, qi) => `${S.cur.r}.${qi}`) : [key(S.cur)];
+    const tot = {}; alive.forEach(t => tot[t.id] = 0);
+    keys.forEach(k => (S.logs[k] || []).forEach(e => { if (e.teamId in tot) tot[e.teamId] += e.score; }));
+    const max = Math.max(...Object.values(tot));
+    return { top: alive.filter(t => tot[t.id] === max), max, scope: S.elim === 'round' ? 'this round' : 'this question' };
+  }
+
+  // Per-question scores for the round in play, for the standings screen
+  function breakdown(){
+    const ri = S.cur ? S.cur.r : 0, r = S.game.rounds[ri]; if (!r) return null;
+    const played = r.questions.map((_, qi) => (S.logs[`${ri}.${qi}`] || []).length > 0);
+    const done = played.filter(Boolean).length;
+    return {
+      name: r.name.slice(0, 40), sub: done === 0 ? `Before ${r.name}` : done === r.questions.length ? `After ${r.name}` : `${r.name} · ${done} of ${r.questions.length} questions played`,
+      cols: r.questions.map((_, qi) => `Q${qi + 1}`),
+      rows: S.teams.map(t => {
+        const qs = r.questions.map((_, qi) => { const l = (S.logs[`${ri}.${qi}`] || []).filter(e => e.teamId === t.id); return l.length ? l.reduce((a, e) => a + e.score, 0) : null; });
+        return { n: t.name.slice(0, 30), q: qs, r: qs.reduce((a, v) => a + (v || 0), 0) };
+      })
+    };
+  }
+  function payload(){
+    const q = Q(S.cur), r = S.cur ? S.game.rounds[S.cur.r] : null;
+    const log = (S.logs[key(S.cur)] || []);
+    const p = {
+      v: 1, sid, t: Date.now() * 10 + (t++ % 10), screen: S.screen, title: S.game.title.slice(0, 80),
+      round: r ? { name: r.name.slice(0, 40), n: S.cur.r + 1, of: S.game.rounds.length, qn: S.cur.q + 1, qof: r.questions.length, pass: progress(S.cur).pass, passes: q ? q.passes : 1 } : null,
+      q: q ? { cat: q.category.slice(0, 40), prompt: q.prompt.slice(0, 200), note: (q.note || '').slice(0, 220), k: key(S.cur) } : null,
+      board: log.slice(-12).map(e => ({ id: e.id, tm: teamName(e.teamId).slice(0, 30), a: e.answer.slice(0, 50), s: e.score, c: e.correct })),
+      last: log.length ? log[log.length - 1].id : null,
+      turn: (S.cur && S.screen === 'question' && team && !progress(S.cur).done) ? { tm: teamName(team).slice(0, 30), a: lock ? lock.text.slice(0, 50) : null } : null,
+      teams: S.teams.map(x => ({ n: x.name.slice(0, 30), s: x.score, o: !!x.out })),
+      bd: S.screen === 'standings' ? breakdown() : null,
+      ans: (S.screen === 'answers' && q) ? [...q.answers].sort((a, b) => a.score - b.score).slice(0, 18).map(a => ({ a: a.text.slice(0, 40), s: a.score })) : null
+    };
+    while (JSON.stringify(p).length > 3900 && (p.ans && p.ans.length > 4 || p.board.length > 3)){
+      if (p.ans && p.ans.length > 4) p.ans.pop(); else p.board.shift();
+    }
+    return p;
+  }
+  function send(fresh = true){
+    if (fresh || !last) last = payload();
+    store.set(LS_LAST, last);
+    if (bc) try { bc.postMessage({ k: 'state', p: last }); } catch {}
+    if (room) room.emit('state', last).catch(() => {});
+    if (net) net.send(last);
+  }
+  let cloudT = null;
+  function savePill(cls, txt){ const el = $('#pill-save'); if (el){ el.className = 'pill ' + cls; el.innerHTML = '<i></i>' + txt; } }
+  function save(){
+    S.ui = { sel, team, lock }; S.savedAt = Date.now();
+    store.set(LS_HOST, S); send(); render();
+    clearTimeout(cloudT);
+    cloudT = setTimeout(() => cloud.put({ savedAt: S.savedAt, json: JSON.stringify(S) }, ok => savePill(ok ? 'on' : 'warn', ok ? 'Saved + backed up' : navigator.onLine === false ? 'Saved here (offline)' : 'Saved here')), 1200);
+  }
+  function restoreUi(){
+    const u = S.ui || {}, ok = p => p && Q(p);
+    sel = ok(u.sel) ? { r: u.sel.r, q: u.sel.q } : S.cur && Q(S.cur) ? { ...S.cur } : { r: 0, q: 0 };
+    team = u.team && S.teams.some(x => x.id === u.team) ? u.team : null;
+    lock = u.lock && typeof u.lock.text === 'string' ? u.lock : null;
+    const i = $('#h-ans'); if (i) i.value = lock ? lock.text : '';
+  }
+  async function restoreCloud(){
+    const c = await cloud.get();
+    if (!(await cloud.ready)){ savePill('', 'Saved here'); return; }
+    if (c && typeof c.json === 'string' && (c.savedAt || 0) > (S.savedAt || 0)){
+      try {
+        const s = JSON.parse(c.json);
+        if (s && s.game && Array.isArray(s.teams)){
+          s.game = normalizeGame(s.game); S = s; restoreUi();
+          store.set(LS_HOST, S); render(); send(); savePill('on', 'Saved + backed up'); toast('Picked up your game where you left off'); return;
+        }
+      } catch {}
+    }
+    if (S.savedAt && (!c || (c.savedAt || 0) < S.savedAt)) cloud.put({ savedAt: S.savedAt, json: JSON.stringify(S) }, ok => savePill(ok ? 'on' : 'warn', ok ? 'Saved + backed up' : 'Saved here'));
+    else savePill('on', 'Saved + backed up');
+  }
+  function toast(msg){ const el = $('#toast'); el.textContent = msg; el.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove('show'), 2200); }
+
+  /* ----- rendering ----- */
+  function render(){
+    $('#h-gtitle').textContent = S.game.title;
+    const total = S.game.rounds.reduce((n, r) => n + r.questions.length, 0);
+    $('#h-qcount').textContent = `${total} question${total === 1 ? '' : 's'}`;
+    $('#h-qlist').innerHTML = S.game.rounds.map((r, ri) => `
+      <div class="qround"><span class="label">${esc(r.name)}</span>
+      ${r.questions.map((q, qi) => {
+        const k = `${ri}.${qi}`, n = (S.logs[k] || []).length, air = S.cur && key(S.cur) === k;
+        return `<button type="button" class="qbtn ${sel.r === ri && sel.q === qi ? 'sel' : ''}" data-r="${ri}" data-q="${qi}">
+          <span class="qn">Q${qi+1}</span><span class="qc">${esc(q.category)}</span>
+          <span class="qs ${air ? 'air' : ''}">${air ? '● ON AIR' : n ? n + ' played' : ''}</span>
+          <span class="qp">${esc(q.prompt)}</span></button>`;
+      }).join('')}</div>`).join('');
+
+    const q = Q(sel), r = S.game.rounds[sel.r];
+    $('#h-qcard').innerHTML = q ? `
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span class="label">${esc(r.name)} · Question ${sel.q+1} of ${r.questions.length} · ${q.answers.length} answers</span>
+      <label class="inline-field" for="h-passes">Answers per team <select id="h-passes">${[1,2,3,4,5].map(n => `<option value="${n}" ${q.passes === n ? 'selected' : ''}>${n}</option>`).join('')}</select></label></div>
+      <span class="cat">${esc(q.category)}</span><h2>${esc(q.prompt)}</h2>${q.note ? `<div class="info"><b>On screen:</b> ${esc(q.note)}</div>` : ''}${q.info ? `<div class="info">${esc(q.info)}</div>` : ''}` : '<div class="empty">No question selected.</div>';
+
+    const live = onAir();
+    const ab = $('#h-airbar');
+    ab.className = 'airbar' + (live ? ' live' : '');
+    let liveMsg = '', elimBtn = '';
+    if (live){
+      const pr = progress(S.cur);
+      liveMsg = pr.done ? 'All answers are in.' : `${pr.passes > 1 ? `Pass ${pr.pass} of ${pr.passes} · ` : ''}${pr.left} answer${pr.left === 1 ? '' : 's'} to go.`;
+      const c = elimCandidate();
+      if (c) elimBtn = c.top.length === 1
+        ? `<button class="btn sm danger" type="button" id="h-elimgo" data-t="${c.top[0].id}">Eliminate ${esc(c.top[0].name)} (${c.max} on ${c.scope})</button>`
+        : `<span class="empty">Tie for highest on ${c.scope}: ${esc(c.top.map(t => t.name).join(', '))}. Use the Out toggle.</span>`;
+    }
+    ab.innerHTML = live
+      ? `<span><b>On screen.</b> ${liveMsg}</span><span class="row-gap">${elimBtn}<button class="btn sm" type="button" id="h-next">Next question</button></span>`
+      : `<span>${S.cur ? 'Another question is on screen.' : 'Nothing is on screen yet.'} This one is a private preview.</span><button class="btn sm primary" type="button" id="h-air">Put on screen</button>`;
+    const air = $('#h-air'); if (air) air.onclick = putOnAir;
+    const nx = $('#h-next'); if (nx) nx.onclick = nextQuestion;
+    const eg = $('#h-elimgo'); if (eg) eg.onclick = () => { const tm = S.teams.find(x => x.id === eg.dataset.t); if (!tm) return; tm.out = true; (S.elimDone ||= {})[key(S.cur)] = true; S.screen = 'standings'; save(); toast(`${tm.name} is out. Standings are on screen.`); };
+    $('#h-elim').value = S.elim || 'off'; $('#h-order').value = S.order || 'show';
+
+    const alive = S.teams.filter(x => !x.out);
+    if (!alive.find(x => x.id === team)) team = alive.length ? alive[0].id : null;
+    const seq = live ? (() => { const n = (S.logs[key(S.cur)] || []).length, k = alive.length || 1; return passOrder(S.cur, Math.floor(n / k)); })() : alive.map(x => x.id);
+    const chipTeams = seq.map(id => alive.find(x => x.id === id)).filter(Boolean);
+    $('#h-tchips').innerHTML = chipTeams.map(x => `<button type="button" class="chip ${x.id === team ? 'on' : ''}" data-t="${x.id}">${esc(x.name)}<small>${x.score}</small></button>`).join('') || '<span class="empty">Add a team on the right.</span>';
+    $('#h-entry').style.opacity = live ? '' : '.45';
+    $('#h-ans').disabled = !live; $('#h-wrong').disabled = !live; $('#h-zero').disabled = !live;
+    const lk = !!lock && live;
+    $('#h-lock').hidden = lk; $('#h-lock').disabled = !live;
+    $('#h-reveal').hidden = !lk; $('#h-reveal').disabled = !(lk && lock.idx != null); $('#h-unlock').hidden = !lk;
+    const ll = $('#h-lockline'); ll.hidden = !lk;
+    if (lk) ll.innerHTML = `On screen: <b>${esc(teamName(team))}</b> says <b>${esc(lock.text)}</b> ${lock.idx != null ? `· scores ${pad2(Q(S.cur).answers[lock.idx].score)}. Press Enter or Reveal.` : '· not on the sheet, so rule it Incorrect or Pointless.'}`;
+
+    const log = S.logs[key(sel)] || [];
+    $('#h-log').innerHTML = log.length ? log.map(e => `<li><span><span class="who">${esc(teamName(e.teamId))}</span> <span class="what">· ${esc(e.answer)}</span></span><span class="pts ${e.correct ? (e.score === 0 ? 'zero' : '') : 'bad'}">${e.correct ? pad2(e.score) : '100 ✕'}</span></li>`).join('') : '<li class="empty" style="background:none;padding:0">No answers revealed yet.</li>';
+    $('#h-undo').disabled = !(live && log.length);
+
+    const given = new Set(log.filter(e => e.correct).map(e => norm(e.answer)));
+    $('#h-sheet').innerHTML = q ? `<thead><tr><th>Answer</th><th style="text-align:right">Score</th></tr></thead><tbody>${
+      q.answers.map((a, i) => ({ a, i })).sort((x, y) => y.a.score - x.a.score).map(({ a, i }) => `<tr data-i="${i}" class="${given.has(norm(a.text)) ? 'given' : ''} ${a.score === 0 ? 'zero' : ''}"><td>${esc(a.text)}${a.aliases.length ? ` <span class="al">(${esc(a.aliases.join(', '))})</span>` : ''}</td><td class="n">${pad2(a.score)}</td></tr>`).join('')}</tbody>` : '';
+
+    $('#h-sheethead').textContent = q ? `Answer sheet (host only) · all ${q.answers.length} answers` : 'Answer sheet (host only)';
+    document.querySelectorAll('#h-screens button').forEach(b => b.classList.toggle('on', b.dataset.s === S.screen));
+    $('#h-teams').innerHTML = S.teams.map(x => `
+      <div class="trow ${x.out ? 'out' : ''}" data-t="${x.id}">
+        <input type="text" value="${esc(x.name)}" data-f="name" aria-label="Team name" id="tn-${x.id}">
+        <input type="number" value="${x.score}" data-f="score" aria-label="${esc(x.name)} score" id="ts-${x.id}">
+        <button type="button" class="mini ${x.out ? 'on' : ''}" data-f="out" title="Eliminate or bring back">${x.out ? 'Out' : 'Playing'}</button>
+        <button type="button" class="mini" data-f="del" title="Remove team" aria-label="Remove ${esc(x.name)}">✕</button>
+      </div>`).join('');
+    renderSugg();
+  }
+  function renderSugg(){
+    renderSugg2();
+    const pick = hits.length && $('#h-ans').value.trim() ? hits[hi].i : -1;
+    document.querySelectorAll('#h-sheet tr[data-i]').forEach(tr => tr.classList.toggle('picked', +tr.dataset.i === pick));
+  }
+  function renderSugg2(){
+    const q = Q(sel), box = $('#h-sugg'), val = $('#h-ans').value;
+    if (!onAir() || !q){ box.innerHTML = '<div class="empty">Put this question on screen to take answers.</div>'; hits = []; return; }
+    hits = findMatches(val, q.answers);
+    if (hi >= hits.length) hi = 0;
+    const log = S.logs[key(sel)] || [];
+    const given = new Set(log.filter(e => e.correct).map(e => norm(e.answer)));
+    if (!val.trim()){ box.innerHTML = ''; return; }
+    box.innerHTML = hits.length ? hits.map((h, j) => { const a = q.answers[h.i]; return `<button type="button" data-i="${h.i}" class="${j === hi ? 'hi' : ''}"><span>${esc(a.text)}${given.has(norm(a.text)) ? '<span class="tag">ALREADY GIVEN</span>' : ''}</span><span class="sc">${pad2(a.score)}</span></button>`; }).join('')
+      : '<div class="empty">Not on the sheet. Rule it Incorrect · 100, or accept it as Pointless 0 if it is right but too rare to be listed.</div>';
+  }
+
+  /* ----- actions ----- */
+  function lockIn(){
+    if (!onAir()) return toast('Put the question on screen first.');
+    if (!team) return toast('Pick the answering team first.');
+    const typed = $('#h-ans').value.trim(), q = Q(S.cur);
+    if (hits.length && typed) lock = { idx: hits[hi].i, text: q.answers[hits[hi].i].text };
+    else if (typed) lock = { idx: null, text: typed };
+    else return toast('Type the answer first.');
+    $('#h-ans').value = lock.text; hi = 0; save();
+  }
+  function unlock(clear){ lock = null; if (clear) $('#h-ans').value = ''; save(); }
+  // Turn order for a question, frozen when it first goes on air. Later passes snake (reverse) like the show.
+  function makeOrder(p){
+    const alive = S.teams.filter(x => !x.out), mode = S.order || 'show';
+    let ids = alive.map(x => x.id);
+    if (mode === 'show' && p.r === 0){ const k = p.q % (ids.length || 1); ids = ids.slice(k).concat(ids.slice(0, k)); }
+    else if (mode !== 'fixed'){
+      const pos = id => alive.findIndex(x => x.id === id), sc = id => alive[pos(id)].score;
+      ids.sort((a, b) => (mode === 'worst' ? sc(b) - sc(a) : sc(a) - sc(b)) || pos(a) - pos(b));
+    }
+    return ids;
+  }
+  function passOrder(p, pass){
+    const live = new Set(S.teams.filter(x => !x.out).map(x => x.id));
+    const base = ((S.ord || {})[key(p)] || makeOrder(p)).filter(id => live.has(id));
+    S.teams.forEach(x => { if (live.has(x.id) && !base.includes(x.id)) base.push(x.id); });
+    return pass % 2 ? [...base].reverse() : base;
+  }
+  function expectedTeam(){
+    if (!S.cur) return team;
+    const n = (S.logs[key(S.cur)] || []).length, alive = S.teams.filter(x => !x.out).length || 1;
+    return passOrder(S.cur, Math.floor(n / alive))[n % alive] || team;
+  }
+  function putOnAir(){
+    lock = null; S.cur = { ...sel }; S.screen = 'question'; S.logs[key(S.cur)] ||= [];
+    S.ord ||= {}; if (!S.ord[key(S.cur)] || !S.logs[key(S.cur)].length) S.ord[key(S.cur)] = makeOrder(S.cur);
+    team = expectedTeam(); save(); $('#h-ans').focus();
+  }
+  function nextQuestion(){
+    const r = S.game.rounds[sel.r];
+    if (sel.q + 1 < r.questions.length) sel = { r: sel.r, q: sel.q + 1 };
+    else if (sel.r + 1 < S.game.rounds.length) sel = { r: sel.r + 1, q: 0 };
+    else { toast('That was the last question. Show the standings!'); return; }
+    render();
+  }
+  function advanceTeam(){ team = expectedTeam(); }
+  function reveal(ansIdx, override){
+    if (!onAir()) return toast('Put the question on screen first.');
+    const tm = S.teams.find(x => x.id === team); if (!tm) return toast('Pick the answering team first.');
+    const q = Q(S.cur), a = ansIdx == null ? null : q.answers[ansIdx];
+    const typed = lock ? lock.text : $('#h-ans').value.trim();
+    if (override === 'zero' && !typed) return toast('Type the answer first, then accept it as pointless.');
+    const e = override === 'zero'
+      ? { id: S.nextId++, teamId: tm.id, answer: typed, score: 0, correct: true, override: true }
+      : { id: S.nextId++, teamId: tm.id, answer: a ? a.text : (typed || 'Incorrect'), score: a ? a.score : 100, correct: !!a };
+    (S.logs[key(S.cur)] ||= []).push(e);
+    tm.score += e.score; S.screen = 'question';
+    $('#h-ans').value = ''; hi = 0; lock = null; advanceTeam(); save();
+    toast(`${tm.name}: ${e.answer} · ${e.correct ? pad2(e.score) : '100'}`);
+    $('#h-ans').focus();
+  }
+  function undo(){
+    const log = S.logs[key(S.cur)]; if (!onAir() || !log || !log.length) return;
+    const e = log.pop(); const tm = S.teams.find(x => x.id === e.teamId); if (tm) tm.score -= e.score;
+    team = e.teamId; lock = null; save(); toast(`Undid ${e.answer}`);
+  }
+
+  function bind(){
+    $('#h-qlist').addEventListener('click', ev => { const b = ev.target.closest('.qbtn'); if (!b) return; sel = { r: +b.dataset.r, q: +b.dataset.q }; $('#h-ans').value = ''; render(); });
+    $('#h-tchips').addEventListener('click', ev => { const b = ev.target.closest('[data-t]'); if (!b) return; team = b.dataset.t; lock = null; save(); $('#h-ans').focus(); });
+    $('#h-ans').addEventListener('input', ev => { hi = 0; if (lock && norm(ev.target.value) !== norm(lock.text)){ lock = null; save(); } else renderSugg(); });
+    $('#h-ans').addEventListener('keydown', ev => {
+      if (ev.key === 'ArrowDown'){ ev.preventDefault(); if (hits.length){ hi = (hi + 1) % hits.length; renderSugg(); } }
+      else if (ev.key === 'ArrowUp'){ ev.preventDefault(); if (hits.length){ hi = (hi - 1 + hits.length) % hits.length; renderSugg(); } }
+      else if (ev.key === 'Enter'){
+        ev.preventDefault();
+        if (!lock) lockIn();
+        else if (lock.idx != null) reveal(lock.idx);
+        else toast('Not on the sheet: rule it Incorrect · 100 or Pointless 0.');
+      }
+      else if (ev.key === 'Escape'){ if (lock) unlock(true); else { ev.target.value = ''; renderSugg(); } }
+      else if (ev.key === 'Tab' && !ev.shiftKey && hits.length){
+        const t = Q(sel).answers[hits[hi].i].text;
+        if (ev.target.value !== t){ ev.preventDefault(); ev.target.value = t; renderSugg(); }
+      }
+    });
+    $('#h-sugg').addEventListener('click', ev => { const b = ev.target.closest('[data-i]'); if (!b) return; const j = hits.findIndex(h => h.i === +b.dataset.i); if (j >= 0) hi = j; lockIn(); });
+    $('#h-lock').onclick = lockIn;
+    $('#h-reveal').onclick = () => { if (lock && lock.idx != null) reveal(lock.idx); };
+    $('#h-unlock').onclick = () => unlock(false);
+    $('#h-wrong').onclick = () => reveal(null);
+    $('#h-zero').onclick = () => reveal(null, 'zero');
+    $('#h-sheet').addEventListener('click', ev => {
+      const tr = ev.target.closest('tr[data-i]'); if (!tr) return;
+      if (!onAir()) return toast('Put the question on screen first.');
+      const q = Q(sel); $('#h-ans').value = q.answers[+tr.dataset.i].text; hi = 0; if (lock){ lock = null; save(); } else render(); $('#h-ans').focus();
+    });
+    $('#h-qcard').addEventListener('change', ev => {
+      if (ev.target.id !== 'h-passes') return; const q = Q(sel); if (!q) return;
+      q.passes = clampPasses(ev.target.value); save();
+    });
+    $('#h-elim').onchange = ev => { S.elim = ev.target.value; save(); };
+    $('#h-order').onchange = ev => { S.order = ev.target.value; if (S.cur && !(S.logs[key(S.cur)] || []).length){ (S.ord ||= {})[key(S.cur)] = makeOrder(S.cur); team = expectedTeam(); } save(); };
+    $('#h-undo').onclick = undo;
+    $('#h-screens').addEventListener('click', ev => {
+      const b = ev.target.closest('[data-s]'); if (!b) return;
+      if ((b.dataset.s === 'question' || b.dataset.s === 'answers') && !S.cur){ toast('Put a question on screen first.'); return; }
+      S.screen = b.dataset.s; save();
+    });
+    $('#h-teams').addEventListener('change', ev => {
+      const row = ev.target.closest('[data-t]'); if (!row) return; const tm = S.teams.find(x => x.id === row.dataset.t); if (!tm) return;
+      if (ev.target.dataset.f === 'name') tm.name = ev.target.value.trim() || tm.name;
+      if (ev.target.dataset.f === 'score'){ const v = Math.round(Number(ev.target.value)); if (Number.isFinite(v)) tm.score = v; }
+      save();
+    });
+    $('#h-teams').addEventListener('click', ev => {
+      const b = ev.target.closest('button[data-f]'); if (!b) return; const row = b.closest('[data-t]');
+      const i = S.teams.findIndex(x => x.id === row.dataset.t); if (i < 0) return;
+      if (b.dataset.f === 'out') S.teams[i].out = !S.teams[i].out;
+      if (b.dataset.f === 'del'){
+        if (b.dataset.armed){ S.teams.splice(i, 1); } else { b.dataset.armed = '1'; b.textContent = 'Remove?'; b.classList.add('on'); setTimeout(() => { if (b.isConnected){ delete b.dataset.armed; b.textContent = '✕'; b.classList.remove('on'); } }, 2500); return; }
+      }
+      save();
+    });
+    $('#h-addteam').onclick = () => { if (S.teams.length >= 10) return toast('Ten teams is the limit.'); S.teams.push({ id: mkId(), name: `Team ${S.teams.length + 1}`, score: 0, out: false }); save(); };
+    const rs = $('#h-reset');
+    rs.onclick = () => {
+      if (!rs.dataset.armed){ rs.dataset.armed = '1'; rs.textContent = 'Click again to reset all scores'; setTimeout(() => { delete rs.dataset.armed; rs.textContent = 'Reset scores'; }, 3000); return; }
+      delete rs.dataset.armed; rs.textContent = 'Reset scores';
+      S.teams.forEach(x => { x.score = 0; x.out = false; }); S.logs = {}; S.ord = {}; S.cur = null; S.screen = 'title'; save(); toast('Scores reset.');
+    };
+    // modal
+    const modal = $('#h-modal'), err = $('#m-err');
+    const showErr = m => { err.textContent = m; err.hidden = !m; };
+    $('#h-load').onclick = () => { showErr(''); modal.hidden = false; $('#m-text').focus(); };
+    $('#m-close').onclick = () => { modal.hidden = true; };
+    modal.addEventListener('keydown', ev => { if (ev.key === 'Escape') modal.hidden = true; });
+    const startGame = game => {
+      S = fresh(game, S.teams.map(x => x.name)); sel = { r: 0, q: 0 }; modal.hidden = true; $('#m-text').value = ''; save();
+      const n = game.rounds.reduce((k, r) => k + r.questions.length, 0);
+      toast(`Loaded ${game.title}: ${n} question${n === 1 ? '' : 's'}.`);
+    };
+    $('#m-apply').onclick = () => { try { startGame(parseGameText($('#m-text').value)); } catch (e) { showErr(e.message); } };
+    $('#m-sample').onclick = () => startGame(normalizeGame(SAMPLE));
+    $('#m-append').onclick = () => {
+      try {
+        const g = parseGameText($('#m-text').value);
+        S.game.rounds.push(...g.rounds); modal.hidden = true; $('#m-text').value = ''; save();
+        toast(`Added ${g.rounds.length} round${g.rounds.length === 1 ? '' : 's'} to the end of the game.`);
+      } catch (e) { showErr(e.message); }
+    };
+    const updPrompt = () => { $('#m-prompt').value = buildPrompt(); };
+    ['ai-theme', 'ai-crowd', 'ai-rounds', 'ai-q', 'ai-min'].forEach(id => $('#' + id).addEventListener('input', updPrompt));
+    updPrompt();
+    $('#m-copyprompt').onclick = () => {
+      const ta = $('#m-prompt'), txt = ta.value;
+      const fallback = () => { ta.focus(); ta.select(); toast('Copy was blocked, so the prompt is selected. Press Ctrl+C or Cmd+C.'); };
+      try { navigator.clipboard.writeText(txt).then(() => toast('Prompt copied.'), fallback); } catch { fallback(); }
+    };
+    $('#m-copy').onclick = () => {
+      const txt = JSON.stringify(S.game, null, 2);
+      const done = () => toast('Copied the game as JSON.');
+      const fallback = () => { const ta = $('#m-text'); ta.value = txt; ta.focus(); ta.select(); toast('Copy was blocked, so the JSON is in the box, selected.'); };
+      try { navigator.clipboard.writeText(txt).then(done, fallback); } catch { fallback(); }
+    };
+    const readFile = f => { if (!f) return; const rd = new FileReader(); rd.onload = () => { $('#m-text').value = rd.result; showErr(''); try { startGame(parseGameText(String(rd.result))); } catch (e) { showErr(e.message); } }; rd.readAsText(f); };
+    $('#m-file').onchange = ev => readFile(ev.target.files[0]);
+    const drop = $('#m-drop');
+    drop.addEventListener('dragover', ev => { ev.preventDefault(); drop.classList.add('over'); });
+    drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+    drop.addEventListener('drop', ev => { ev.preventDefault(); drop.classList.remove('over'); readFile(ev.dataTransfer.files[0]); });
+    $('#m-json').textContent = JSON.stringify({ title: 'My game', teams: ['Team A', 'Team B'], rounds: [{ name: 'Round 1', questions: [{ category: 'Geography', prompt: 'Name any country that borders Germany', info: 'Optional host note', answers: [{ text: 'France', score: 70 }, { text: 'Czech Republic', score: 20, aliases: ['Czechia'] }, { text: 'Luxembourg', score: 8 }] }] }] }, null, 2);
+    $('#m-csv').textContent = 'round,category,prompt,answer,score,aliases\nRound 1,Geography,Name any country that borders Germany,France,70,\nRound 1,Geography,Name any country that borders Germany,Czech Republic,20,Czechia\nRound 1,Geography,Name any country that borders Germany,Luxembourg,8,\nFinal,Theatre,Name any play by Shakespeare,Cymbeline,0,';
+  }
+
+  function sync(){
+    if (P2P){
+      if (!S.code) { S.code = Net.newCode(); store.set(LS_HOST, S); }
+      joinCode = S.code;
+      const pill = $('#pill-room');
+      net = Net.host(S.code, () => last, (st, n) => {
+        pill.className = 'pill ' + (st === 'on' ? (n ? 'on' : 'warn') : '');
+        pill.innerHTML = st === 'on' ? `<i></i>Join code ${esc(S.code)} · ${n} screen${n === 1 ? '' : 's'}` : st === 'taken' ? `<i></i>Code ${esc(S.code)} busy, retrying` : st === 'fail' ? '<i></i>Join codes unavailable (offline?)' : `<i></i>Code ${esc(S.code)} · reconnecting`;
+        pill.title = 'Other devices open the screen link and type this code';
+      });
+      if (bc) bc.addEventListener('message', ev => { if (ev.data && ev.data.k === 'hello') send(false); });
+      return;
+    }
+    if (bc) bc.addEventListener('message', ev => { if (ev.data && ev.data.k === 'hello') send(false); });
+    setInterval(() => { if (room) send(false); }, 5000);
+    roomReady.then(r => {
+      const pill = $('#pill-room');
+      if (!r){ pill.className = 'pill'; pill.innerHTML = '<i></i>Other devices: off'; pill.title = 'Live sync to other devices is unavailable in this view. Windows in this browser still sync.'; return; }
+      r.presence({ role: 'host' }).catch(() => {});
+      r.on('hello', () => send(false));
+      let deb;
+      const upd = () => {
+        const n = r.peers().filter(p => !p.sameTab && p.presence && p.presence.role === 'audience').length;
+        pill.className = 'pill ' + (r.connected() ? (n ? 'on' : 'warn') : '');
+        pill.innerHTML = `<i></i>${r.connected() ? `Other devices: ${n} screen${n === 1 ? '' : 's'}` : 'Other devices: reconnecting'}`;
+      };
+      r.onPeers(ch => { upd(); if (ch.joined.length){ clearTimeout(deb); deb = setTimeout(() => send(false), 300); } }, () => { pill.className = 'pill'; pill.innerHTML = '<i></i>Other devices: off'; });
+      r.onConnection(() => { upd(); if (r.connected()) send(false); });
+      send(false);
+    });
+  }
+
+  return { init(){
+    if (inited){ render(); return; }
+    inited = true; S = load(); restoreUi();
+    bind(); sync(); render(); send(); restoreCloud();
+  } };
+})();
+
+/* ================= SOUND ================= */
+const Snd = {
+  ctx: null, on: false, sweep: null,
+  toggle(){
+    try { this.ctx = this.ctx || new (window.AudioContext || window.webkitAudioContext)(); this.ctx.resume(); } catch { this.ctx = null; }
+    this.on = !!this.ctx && !this.on;
+    if (this.on) this.note(880, .15, 'sine', .12);
+    return this.on;
+  },
+  note(f, dur, type = 'sine', vol = .14, when = 0){
+    if (!this.on || !this.ctx) return; const c = this.ctx, t0 = c.currentTime + when;
+    const o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.value = f;
+    g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(vol, t0 + .02); g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
+    o.connect(g).connect(c.destination); o.start(t0); o.stop(t0 + dur + .05);
+  },
+  startSweep(){
+    if (!this.on || !this.ctx) return; const c = this.ctx;
+    const o = c.createOscillator(), g = c.createGain(); o.type = 'triangle'; o.frequency.value = 900;
+    g.gain.value = 0; g.gain.linearRampToValueAtTime(.09, c.currentTime + .05);
+    o.connect(g).connect(c.destination); o.start(); this.sweep = { o, g };
+  },
+  setSweep(v){ if (this.sweep) this.sweep.o.frequency.setTargetAtTime(160 + v * 7.4, this.ctx.currentTime, .02); },
+  stopSweep(){ if (!this.sweep) return; const { o, g } = this.sweep, t0 = this.ctx.currentTime; g.gain.cancelScheduledValues(t0); g.gain.setValueAtTime(g.gain.value, t0); g.gain.linearRampToValueAtTime(0, t0 + .08); o.stop(t0 + .1); this.sweep = null; },
+  ding(){ this.note(1320, .5, 'sine', .12); this.note(1980, .4, 'sine', .05, .02); },
+  fanfare(){ [523, 659, 784, 1047, 1319].forEach((f, i) => this.note(f, .5, 'triangle', .13, i * .11)); },
+  buzz(){ this.note(98, .7, 'sawtooth', .1); this.note(104, .7, 'square', .05); }
+};
+
+/* ================= AUDIENCE ================= */
+const Aud = (() => {
+  let inited = false, P = null, seen = new Set(), got = false, token = 0, pendingId = null, lastQ = null, lastScreen = null;
+  let holdUntil = 0, holdTimer = 0, turnKey = '';
+  const delayFor = v => v > 60 ? 10 : v > 30 ? 17 : v > 15 ? 35 : v > 5 ? 75 : 140;
+  const fx = { ctx: null, parts: [], raf: 0 };
+
+  function setScreen(s){ document.querySelectorAll('#aud .scr').forEach(el => el.classList.toggle('on', el.dataset.s === s)); }
+  function setColumn(v, cls = ''){
+    $('#a-fill').style.setProperty('--v', v);
+    const tube = $('#a-tube'), rd = $('#a-read');
+    tube.classList.toggle('zero', cls === 'zero'); tube.classList.toggle('bad', cls === 'bad');
+    tube.classList.toggle('warm', !cls && v <= 30 && v > 10); tube.classList.toggle('hot', !cls && v <= 10);
+    rd.className = 'readout ' + cls; rd.textContent = cls === 'bad' ? '100' : pad2(v);
+  }
+  function setSeg(){ const h = $('#a-tube').clientHeight || 400; $('#a-fill').style.setProperty('--seg', Math.max(3, h / 100) + 'px'); }
+
+  function apply(p, initial){
+    if (!p || typeof p !== 'object' || p.v !== 1 || typeof p.t !== 'number') return;
+    if (P && p.sid === P.sid && p.t <= P.t) return;
+    const animate = got && !initial; got = true; const prev = P; P = p;
+    render(prev, animate);
+  }
+
+  function render(prev, animate){
+    const p = P;
+    $('#a-meta').textContent = p.round ? `${p.round.name} · Question ${p.round.qn} of ${p.round.qof}${p.round.passes > 1 ? ` · Answer ${p.round.pass} of ${p.round.passes}` : ''}` : p.title;
+    const scr = ['title', 'question', 'answers', 'standings'].includes(p.screen) ? p.screen : 'title';
+    const changed = scr !== lastScreen; lastScreen = scr;
+    setScreen(scr);
+    if (scr === 'title'){
+      $('#a-title').textContent = p.title;
+      $('#a-tteams').innerHTML = (p.teams || []).map((t, i) => `<span style="animation-delay:${i * 90}ms">${esc(t.n)}</span>`).join('');
+    }
+    if (scr === 'question') renderQuestion(prev, animate);
+    if (scr === 'answers' && (changed || JSON.stringify(prev && prev.ans) !== JSON.stringify(p.ans))) renderAnswers(animate);
+    if (scr === 'standings') renderStand(animate, changed);
+    $('#a-minis').hidden = !(scr === 'question' || scr === 'answers');
+    renderMinis();
+    outSeen = new Set((p.teams || []).filter(t => t.o).map(t => t.n));
+  }
+  function renderMinis(){
+    if (pendingId != null || !P) return;
+    const ol = $('#a-minis'), before = {};
+    ol.querySelectorAll('[data-k]').forEach(el => before[el.dataset.k] = el.getBoundingClientRect().top);
+    const cur = P.turn && P.turn.tm;
+    const teams = (P.teams || []).filter(t => !t.o).slice().sort((a, b) => a.s - b.s);
+    ol.innerHTML = teams.map(t => `<li data-k="${esc(t.n)}" class="${t.n === cur ? 'cur' : ''}"><span>${esc(t.n)}</span><b>${t.s}</b></li>`).join('');
+    if (!reduced) ol.querySelectorAll('[data-k]').forEach(el => {
+      const b = before[el.dataset.k]; if (b == null) return; const d = b - el.getBoundingClientRect().top;
+      if (d) el.animate([{ transform: `translateY(${d}px)` }, { transform: 'none' }], { duration: 600, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    });
+  }
+
+  function boardHTML(list){
+    return list.slice().reverse().map(e => `<li class="${e.c ? (e.s === 0 ? 'zero' : '') : 'bad'}"><span class="bt">${esc(e.tm)}</span><span>${esc(e.a)}</span><span class="bs">${e.c ? pad2(e.s) : '✕'}</span></li>`).join('');
+  }
+  function renderQuestion(prev, animate){
+    const p = P, q = p.q || { cat: '', prompt: '', k: '' };
+    const board = Array.isArray(p.board) ? p.board : [];
+    const newQ = q.k !== lastQ; lastQ = q.k;
+    $('#a-cat').textContent = q.cat; $('#a-prompt').textContent = q.prompt; $('#a-note').textContent = q.note || ''; $('#a-note').hidden = !q.note;
+    if (newQ){
+      token++; pendingId = null; holdUntil = 0; Snd.stopSweep(); setTense(false); endParty();
+      hideCard(); setColumn(100);
+      const m = $('#a-qmain'); m.classList.remove('anim-in'); void m.offsetWidth; if (animate) m.classList.add('anim-in');
+    }
+    const lastE = board.find(e => e.id === p.last);
+    if (lastE && !seen.has(lastE.id) && animate){
+      board.forEach(e => seen.add(e.id));
+      $('#a-board').innerHTML = boardHTML(board.filter(e => e.id !== lastE.id));
+      runReveal(lastE);
+      return;
+    }
+    board.forEach(e => seen.add(e.id));
+    if (pendingId != null && pendingId !== p.last){ token++; pendingId = null; Snd.stopSweep(); setTense(false); endParty(); holdUntil = 0; }
+    if (pendingId != null) return;
+    $('#a-board').innerHTML = boardHTML(board);
+    idleCard();
+  }
+  // Between reveals: hold the last result for a moment, then show who is answering next
+  function idleCard(){
+    const p = P, board = p.board || [], lastE = board.find(e => e.id === p.last), wait = holdUntil - Date.now();
+    if (wait > 0 && lastE){
+      showStatic(lastE); clearTimeout(holdTimer);
+      holdTimer = setTimeout(() => { if (P && lastScreen === 'question' && pendingId == null) { idleCard(); renderMinis(); } }, wait + 30);
+      return;
+    }
+    if (p.turn && typeof p.turn.tm === 'string') showTurn(p.turn);
+    else if (lastE) showStatic(lastE);
+    else hideCard();
+  }
+  function showTurn(t){
+    const card = $('#a-reveal'), a = typeof t.a === 'string' ? t.a : null, k = t.tm + '|' + (a || '');
+    card.hidden = false; card.classList.toggle('waiting', !a); card.classList.toggle('locked', !!a);
+    $('#a-qmain').classList.add('has-card');
+    $('#a-rvteam').textContent = a ? `${t.tm} · locked in` : `${t.tm} to answer`;
+    const ans = $('#a-rvans');
+    if (k !== turnKey){ ans.textContent = a || 'Thinking…'; ans.classList.remove('pop'); void ans.offsetWidth; ans.classList.add('pop'); if (a) Snd.note(523, .14, 'triangle', .08); }
+    turnKey = k;
+    const fl = $('#a-flag'); fl.className = 'rv-flag'; fl.textContent = '';
+    setColumn(100);
+  }
+  function hideCard(){ $('#a-reveal').hidden = true; $('#a-qmain').classList.remove('has-card'); turnKey = ''; }
+  function showStatic(e){
+    const card = $('#a-reveal'); card.hidden = false; card.classList.remove('waiting', 'locked'); $('#a-qmain').classList.add('has-card'); turnKey = '';
+    $('#a-rvteam').textContent = e.tm; const ans = $('#a-rvans'); ans.textContent = e.a; ans.classList.remove('pop');
+    const fl = $('#a-flag'), close = e.c && e.s > 0 && e.s <= 5;
+    fl.className = 'rv-flag show ' + (e.c ? (e.s === 0 ? 'zero' : close ? 'close' : '') : 'bad');
+    fl.textContent = e.c ? (e.s === 0 ? 'Pointless!' : close ? 'So close!' : '') : 'Incorrect';
+    setColumn(e.c ? e.s : 100, e.c ? (e.s === 0 ? 'zero' : '') : 'bad');
+  }
+  const setTense = on => $('#aud').classList.toggle('tense', !!on && !reduced);
+  function retrigger(el, cls){ el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+  async function runReveal(e){
+    const my = ++token; pendingId = e.id; Snd.stopSweep(); clearTimeout(holdTimer);
+    const alive = () => my === token;
+    const wasLocked = turnKey === e.tm + '|' + e.a; turnKey = '';
+    const card = $('#a-reveal'); card.hidden = false; card.classList.remove('waiting', 'locked'); $('#a-qmain').classList.add('has-card');
+    setColumn(100);
+    $('#a-rvteam').textContent = e.tm;
+    const ans = $('#a-rvans'), fl = $('#a-flag'), rd = $('#a-read');
+    if (!wasLocked || ans.textContent !== e.a){ ans.textContent = e.a; retrigger(ans, 'pop'); }
+    fl.className = 'rv-flag'; fl.textContent = '';
+    await sleep(reduced ? 150 : wasLocked ? 450 : 850); if (!alive()) return;
+    if (!e.c){
+      setColumn(100, 'bad'); Snd.buzz();
+      fl.textContent = 'Incorrect'; fl.className = 'rv-flag bad show';
+    } else {
+      const target = e.s; let v = 100;
+      Snd.startSweep();
+      while (v > target){
+        v--; setColumn(v); Snd.setSweep(v);
+        if (v <= 15) retrigger(rd, 'tick');
+        if (v <= 10){ setTense(true); Snd.note(330 + (10 - v) * 70, .07, 'square', .035); }
+        if (!reduced) await sleep(delayFor(v));
+        if (!alive()){ setTense(false); return; }
+      }
+      Snd.stopSweep(); setTense(false);
+      if (target === 0){ setColumn(0, 'zero'); retrigger(rd, 'land'); Snd.fanfare(); fl.textContent = 'Pointless!'; fl.className = 'rv-flag zero show'; party(); }
+      else {
+        setColumn(target); retrigger(rd, 'land'); Snd.ding();
+        if (target <= 5){ fl.textContent = 'So close!'; fl.className = 'rv-flag close show'; }
+      }
+    }
+    await sleep(reduced ? 0 : 400); if (!alive()) return;
+    pendingId = null; holdUntil = Date.now() + (e.c && e.s === 0 ? 2600 : 1500);
+    $('#a-board').innerHTML = boardHTML(P && Array.isArray(P.board) ? P.board : []);
+    renderMinis(); idleCard();
+  }
+  function party(){
+    burst();
+    if (reduced) return;
+    const el = $('#a-party'); clearTimeout(party._t); el.hidden = false; el.classList.remove('fade', 'go'); void el.offsetWidth; el.classList.add('go');
+    setTimeout(() => burst(true), 650);
+    party._t = setTimeout(() => { el.classList.add('fade'); party._t = setTimeout(endParty, 460); }, 2600);
+  }
+  function endParty(){ clearTimeout(party._t); const el = $('#a-party'); el.hidden = true; el.classList.remove('go', 'fade'); }
+
+  function renderAnswers(animate){
+    const list = Array.isArray(P.ans) ? P.ans : [];
+    const zeros = list.filter(a => a.s === 0).length;
+    $('#a-anshead').textContent = zeros ? `${zeros} pointless answer${zeros === 1 ? '' : 's'}, and the other low scorers` : 'The lowest-scoring answers';
+    $('#a-ans').innerHTML = list.map((a, i) => `<div class="ans ${a.s === 0 ? 'zero' : ''} ${animate ? 'flip' : ''}" style="animation-delay:${i * 80}ms"><span>${esc(a.a)}</span><b>${pad2(a.s)}</b></div>`).join('');
+    if (animate && !reduced) list.forEach((a, i) => setTimeout(() => Snd.note(a.s === 0 ? 1047 : 660, .12, 'triangle', .07), i * 80));
+  }
+
+  let outSeen = null;
+  function renderStand(animate, changed){
+    const ol = $('#a-stand'), before = {};
+    if (!changed) ol.querySelectorAll('[data-k]').forEach(el => before[el.dataset.k] = el.getBoundingClientRect().top);
+    const bd = P.bd && Array.isArray(P.bd.rows) ? P.bd : null;
+    const cols = bd && Array.isArray(bd.cols) ? bd.cols : [];
+    const byName = {}; if (bd) bd.rows.forEach(r => byName[r.n] = r);
+    $('#a-standsub').textContent = bd ? bd.sub : '';
+    const teams = (P.teams || []).slice().sort((a, b) => (a.o - b.o) || (a.s - b.s));
+    const prevOut = outSeen;
+    ol.style.setProperty('--cols', `2em minmax(0,13em) ${cols.map(() => 'minmax(2.4em,4.5em)').join(' ')} ${cols.length ? '4.5em' : ''} 1fr 3.4em`);
+    const cell = v => v == null ? '<span class="qc na">–</span>' : `<span class="qc ${v === 0 ? 'z' : v >= 100 ? 'w' : ''}">${v}</span>`;
+    const head = `<li class="head"><span></span><span>Team</span>${cols.map(c => `<span class="qc">${esc(c)}</span>`).join('')}${cols.length ? `<span class="rd">${esc(bd.name)}</span>` : ''}<span></span><span class="sc">Total</span></li>`;
+    ol.innerHTML = head + teams.map((t, i) => {
+      const row = byName[t.n], isNew = t.o && prevOut && !prevOut.has(t.n) && animate;
+      return `<li data-k="${esc(t.n)}" class="${t.o ? 'out' : ''} ${isNew ? 'elim' : ''} ${i === 0 && !t.o ? 'lead' : ''}"><span class="pos">${i + 1}</span><span class="nm">${esc(t.n)}</span>${cols.map((_, ci) => cell(row ? row.q[ci] : null)).join('')}${cols.length ? `<span class="rd">${row ? row.r : 0}</span>` : ''}<span></span><span class="sc">${t.s}</span>${t.o ? '<span class="stamp">Out</span>' : ''}</li>`;
+    }).join('');
+    if (ol.querySelector('.elim')) Snd.buzz();
+    if (animate && !reduced) ol.querySelectorAll('[data-k]').forEach((el, i) => {
+      const b = before[el.dataset.k];
+      if (b == null){ if (changed) el.animate([{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }], { duration: 350, delay: i * 70, easing: 'ease-out', fill: 'backwards' }); return; }
+      const d = b - el.getBoundingClientRect().top;
+      if (d) el.animate([{ transform: `translateY(${d}px)` }, { transform: 'none' }], { duration: 600, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    });
+  }
+
+  function burst(right){
+    if (reduced) return;
+    const cv = $('#a-fx'), r = cv.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1);
+    cv.width = r.width * dpr; cv.height = r.height * dpr;
+    const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const css = getComputedStyle(document.documentElement);
+    const cols = ['--mustard', '--red', '--teal', '--blue', '--paper'].map(v => css.getPropertyValue(v).trim());
+    const tube = $('#a-tube').getBoundingClientRect();
+    const ox = right ? r.width - 40 : tube.left - r.left + tube.width / 2, oy = right ? r.height - 20 : tube.bottom - r.top - 20;
+    for (let i = 0; i < 180; i++){
+      const a = -Math.PI / 2 + (Math.random() - .5) * 1.6, sp = 6 + Math.random() * 12;
+      fx.parts.push({ x: ox, y: oy, vx: Math.cos(a) * sp + (right ? -3 : 3), vy: Math.sin(a) * sp, s: 3 + Math.random() * 6, c: cols[i % cols.length], rot: Math.random() * 6, vr: (Math.random() - .5) * .4, life: 0 });
+    }
+    cancelAnimationFrame(fx.raf);
+    const tick = () => {
+      ctx.clearRect(0, 0, r.width, r.height);
+      fx.parts = fx.parts.filter(q => q.life < 150 && q.y < r.height + 20);
+      for (const q of fx.parts){
+        q.life++; q.vy += .32; q.vx *= .99; q.x += q.vx; q.y += q.vy; q.rot += q.vr;
+        ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.rot); ctx.globalAlpha = Math.max(0, 1 - q.life / 150);
+        ctx.fillStyle = q.c; ctx.fillRect(-q.s / 2, -q.s / 4, q.s, q.s / 2); ctx.restore();
+      }
+      if (fx.parts.length) fx.raf = requestAnimationFrame(tick); else ctx.clearRect(0, 0, r.width, r.height);
+    };
+    fx.raf = requestAnimationFrame(tick);
+  }
+
+  function init(){
+    if (inited){ if (P) render(null, false); return; }
+    inited = true;
+    $('#a-ticks').innerHTML = Array.from({ length: 11 }, (_, i) => `<span style="bottom:${i * 10}%">${i * 10}</span>`).join('');
+    setSeg(); addEventListener('resize', setSeg);
+    const sb = $('#a-sound');
+    sb.onclick = () => { const on = Snd.toggle(); sb.textContent = on ? 'Sound on' : 'Sound off'; sb.classList.toggle('on', on); };
+    $('#a-fs').onclick = () => { try { const d = document.documentElement; (document.fullscreenElement ? document.exitFullscreen() : d.requestFullscreen()).catch(() => {}); } catch {} };
+    const aud = $('#aud'); let idle;
+    const wake = () => { aud.classList.remove('idle'); clearTimeout(idle); idle = setTimeout(() => aud.classList.add('idle'), 3000); };
+    ['pointermove', 'pointerdown', 'keydown'].forEach(e => addEventListener(e, wake)); wake();
+    try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(() => {}); } catch {}
+    const lastP = store.get(LS_LAST); if (lastP) apply(lastP, true);
+    if (P2P){
+      const form = $('#a-join'), inp = $('#a-code'), msg = $('#a-waitmsg');
+      let link = null;
+      const st = { connecting: 'Connecting…', on: 'Connected. Waiting for the host…', lost: 'Lost the host, reconnecting…', nohost: 'No game with that code yet. Retrying…', fail: 'Couldn\'t load the connection library. Check the internet.' };
+      const go = code => {
+        code = Net.cleanCode(code); if (code.length !== 4) { msg.textContent = 'Codes are 4 letters or numbers.'; return; }
+        store.set('pointless.join', code); if (link) link.stop(); form.hidden = true;
+        link = Net.join(code, p => apply(p), s => { msg.textContent = `Code ${code}: ${st[s] || s}`; if (s === 'nohost' || s === 'fail') form.hidden = false; });
+      };
+      form.hidden = false; msg.textContent = 'Type the code shown on the host screen.';
+      inp.value = joinParam || store.get('pointless.join') || '';
+      form.onsubmit = ev => { ev.preventDefault(); go(inp.value); };
+      if (joinParam) go(joinParam);
+    }
+    if (bc){ bc.addEventListener('message', ev => { if (ev.data && ev.data.k === 'state') apply(ev.data.p); }); try { bc.postMessage({ k: 'hello' }); } catch {} }
+    roomReady.then(r => {
+      if (!r) return;
+      r.on('state', m => { if (!(m.isMe && m.sameTab)) apply(m.data); });
+      r.presence({ role: 'audience' }).catch(() => {});
+      r.emit('hello').catch(() => {});
+    });
+  }
+  return { init };
+})();
+
+/* ================= Boot ================= */
+const FLAGS = [['--red','--paper'],['--plum','--paper'],['--mustard','--on-paper'],['--blue','--paper'],['--teal','--on-paper'],['--paper','--on-paper']];
+document.querySelectorAll('.bunting[data-word]').forEach(el => {
+  const w = el.dataset.word, n = w.length;
+  el.innerHTML = [...w].map((ch, i) => { const [c, fg] = FLAGS[i % FLAGS.length]; const x = (i - (n - 1) / 2) / ((n - 1) / 2 || 1);
+    return `<span style="--c:var(${c});--fg:var(${fg});--r:${(i % 2 ? 4 : -4) + (i % 3 - 1)}deg;--y:${(x * x * 0.22).toFixed(2)}em">${esc(ch)}</span>`; }).join('');
+  el.setAttribute('aria-label', w);
+});
+let h = (location.hash || '').replace('#', '');
+if (joinParam) h = 'audience';
+if (!h) try { h = sessionStorage.getItem('pointless.mode') || ''; } catch {}
+// The claude.ai viewer doesn't always pass #audience through to the page, so each device remembers its role
+if (!h) h = store.get('pointless.device') || '';
+roomReady.then(r => {
+  if (!r) return;
+  const upd = () => { const live = r.peers().some(p => !p.sameTab && p.presence && p.presence.role === 'host'); const el = $('#home-live'); if (el) el.hidden = !live; $('#go-aud').classList.toggle('hot', live); };
+  try { r.onPeers(upd); upd(); } catch {}
+});
+setMode(h === 'host' ? 'host' : h === 'audience' ? 'audience' : 'home');
+})();
+</script>
