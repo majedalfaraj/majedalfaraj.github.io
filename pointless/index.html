@@ -103,6 +103,16 @@ input:focus,textarea:focus,select:focus{border-color:var(--mustard);outline:none
 .qbtn .qp{grid-column:2/4;font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .qbtn .qs{font-size:11.5px;color:var(--muted)}
 .qbtn .qs.air{color:var(--teal);font-weight:600}
+.qhead-r{display:flex;align-items:center;gap:8px}
+.qrow{display:grid;gap:0;min-width:0}
+.qrow .qbtn{min-width:0}
+.qtools{display:flex;align-items:center;gap:2px;padding:0 6px 6px 26px}
+.qt{all:unset;cursor:pointer;font-size:13px;line-height:1;padding:5px 6px;border-radius:4px;color:var(--muted)}
+.qt:hover{background:var(--ink-3);color:var(--text)}
+.qt:disabled{opacity:.3;cursor:default;background:none}
+.qt:focus-visible{outline:2px solid var(--mustard)}
+.qsel{font-size:12px;padding:3px 4px !important;margin-left:auto;max-width:120px}
+.qbench .qbtn{cursor:default;opacity:.7}
 .qcard{display:grid;gap:8px;background:var(--paper);color:var(--on-paper);border-radius:3px;padding:16px 18px}
 .qcard .label{color:var(--paper-muted)}
 .qcard .inline-field{color:var(--paper-muted)}
@@ -385,7 +395,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--mustard);outline:none
   </div>
   <div class="h-grid">
     <aside class="panel">
-      <header><span class="label">Questions</span><span class="mono" id="h-qcount"></span></header>
+      <header><span class="label">Questions</span><span class="qhead-r"><span class="mono" id="h-qcount"></span><button class="btn sm" id="h-plan" type="button" aria-pressed="false">Edit rounds</button></span></header>
       <div class="qlist" id="h-qlist"></div>
     </aside>
 
@@ -888,7 +898,7 @@ const screenURL = () => { let framed = true; try { framed = window.top !== windo
 /* ================= HOST ================= */
 const Host = (() => {
   let net = null;
-  let S, inited = false, sel = { r: 0, q: 0 }, team = null, hits = [], hi = 0, last = null, t = 0, lock = null;
+  let S, inited = false, plan = false, sel = { r: 0, q: 0 }, team = null, hits = [], hi = 0, last = null, t = 0, lock = null;
   const sid = Math.random().toString(36).slice(2, 10);
   const mkId = () => Math.random().toString(36).slice(2, 9);
 
@@ -999,15 +1009,27 @@ const Host = (() => {
     $('#h-gtitle').textContent = S.game.title;
     const total = S.game.rounds.reduce((n, r) => n + r.questions.length, 0);
     $('#h-qcount').textContent = `${total} question${total === 1 ? '' : 's'}`;
+    const pb = $('#h-plan'); pb.textContent = plan ? 'Done' : 'Edit rounds'; pb.setAttribute('aria-pressed', plan); pb.classList.toggle('primary', plan);
+    const nr = S.game.rounds.length;
+    const rsel = (cur) => `<select class="qsel" data-act="to" aria-label="Move to round">${S.game.rounds.map((x, i) => `<option value="${i}" ${i === cur ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}<option value="new">New round</option>${cur < 0 ? '<option value="" selected>Move to…</option>' : ''}</select>`;
     $('#h-qlist').innerHTML = S.game.rounds.map((r, ri) => `
       <div class="qround"><span class="label">${esc(r.name)}</span>
       ${r.questions.map((q, qi) => {
         const k = `${ri}.${qi}`, n = (S.logs[k] || []).length, air = S.cur && key(S.cur) === k;
-        return `<button type="button" class="qbtn ${sel.r === ri && sel.q === qi ? 'sel' : ''}" data-r="${ri}" data-q="${qi}">
+        const btn = `<button type="button" class="qbtn ${sel.r === ri && sel.q === qi ? 'sel' : ''}" data-r="${ri}" data-q="${qi}">
           <span class="qn">Q${qi+1}</span><span class="qc">${esc(q.category)}</span>
-          <span class="qs ${air ? 'air' : ''}">${air ? '● ON AIR' : n ? n + ' played' : ''}</span>
+          <span class="qs ${air ? 'air' : ''}">${air ? '● ON AIR' : n ? n + ' played' : plan ? q.passes + (q.passes === 1 ? ' turn' : ' turns') : ''}</span>
           <span class="qp">${esc(q.prompt)}</span></button>`;
-      }).join('')}</div>`).join('');
+        if (!plan) return btn;
+        const first = ri === 0 && qi === 0, lastQ = ri === nr - 1 && qi === r.questions.length - 1;
+        return `<div class="qrow" data-r="${ri}" data-q="${qi}">${btn}<span class="qtools">
+          <button type="button" class="qt" data-act="up" title="Move up" aria-label="Move up" ${first ? 'disabled' : ''}>↑</button>
+          <button type="button" class="qt" data-act="down" title="Move down" aria-label="Move down" ${lastQ ? 'disabled' : ''}>↓</button>
+          ${rsel(ri)}
+          <button type="button" class="qt" data-act="bench" title="${n || air ? 'Already played' : 'Leave out of this game'}" aria-label="Leave out" ${n || air ? 'disabled' : ''}>✕</button></span></div>`;
+      }).join('')}</div>`).join('') + (plan && (S.bench || []).length ? `
+      <div class="qround qbench"><span class="label">Not playing</span>
+      ${S.bench.map((q, bi) => `<div class="qrow" data-b="${bi}"><span class="qbtn"><span class="qn">·</span><span class="qc">${esc(q.category)}</span><span class="qs"></span><span class="qp">${esc(q.prompt)}</span></span><span class="qtools">${rsel(-1)}</span></div>`).join('')}</div>` : '');
 
     const q = Q(sel), r = S.game.rounds[sel.r];
     $('#h-qcard').innerHTML = q ? `
@@ -1151,8 +1173,61 @@ const Host = (() => {
     team = e.teamId; lock = null; save(); toast(`Undid ${e.answer}`);
   }
 
+  /* Host-side round planning: move, reorder or leave out questions. Logs, turn orders and the on-air pointer follow each question. */
+  function reshape(fn){
+    const all = S.game.rounds.flatMap((r, ri) => r.questions.map((q, qi) => [q, `${ri}.${qi}`]));
+    const old = new Map(all);
+    if (fn() === false) return;
+    S.game.rounds = S.game.rounds.filter(r => r.questions.length);
+    S.game.rounds.forEach((r, i) => { if (/^Round \d+$/.test(r.name)) r.name = `Round ${i + 1}`; });
+    const map = {};
+    S.game.rounds.forEach((r, ri) => r.questions.forEach((q, qi) => { if (old.has(q)) map[old.get(q)] = `${ri}.${qi}`; }));
+    const rk = o => { const n = {}; for (const k in o || {}) if (map[k]) n[map[k]] = o[k]; return n; };
+    S.logs = rk(S.logs); S.ord = rk(S.ord); S.elimDone = rk(S.elimDone);
+    const rp = p => { const m = p && map[key(p)]; if (!m) return null; const [r, q] = m.split('.').map(Number); return { r, q }; };
+    const wasSel = sel; S.cur = rp(S.cur); sel = rp(wasSel) || S.cur || { r: 0, q: 0 };
+    save();
+  }
+  function newRoundAt(){
+    const rs = S.game.rounds, fin = rs.length && /final/i.test(rs[rs.length - 1].name);
+    const at = fin ? rs.length - 1 : rs.length;
+    rs.splice(at, 0, { name: `Round ${at + 1}`, questions: [] });
+    return at;
+  }
+  function planAction(row, act, val){
+    if (row.dataset.b != null){
+      const bi = +row.dataset.b; if (val === '') return;
+      reshape(() => { const q = S.bench.splice(bi, 1)[0]; if (!q) return false; const to = val === 'new' ? newRoundAt() : +val; S.game.rounds[to].questions.push(q); });
+      return;
+    }
+    const ri = +row.dataset.r, qi = +row.dataset.q;
+    reshape(() => {
+      const rs = S.game.rounds, list = rs[ri].questions, q = list[qi];
+      if (act === 'up' || act === 'down'){
+        const d = act === 'up' ? -1 : 1, j = qi + d;
+        if (j >= 0 && j < list.length){ [list[qi], list[j]] = [list[j], list[qi]]; return; }
+        const nri = ri + d; if (!rs[nri]) return false;
+        list.splice(qi, 1); d < 0 ? rs[nri].questions.push(q) : rs[nri].questions.unshift(q); return;
+      }
+      if (act === 'bench'){
+        const total = rs.reduce((n, r) => n + r.questions.length, 0);
+        if (total <= 1){ toast('Keep at least one question.'); return false; }
+        if ((S.logs[`${ri}.${qi}`] || []).length || (S.cur && S.cur.r === ri && S.cur.q === qi)) return false;
+        list.splice(qi, 1); (S.bench ||= []).push(q); return;
+      }
+      if (act === 'to'){
+        if (val === 'new'){ const to = newRoundAt(); const src = rs[to <= ri ? ri + 1 : ri].questions; src.splice(qi, 1); rs[to].questions.push(q); return; }
+        const to = +val; if (to === ri) return false;
+        list.splice(qi, 1); rs[to].questions.push(q);
+      }
+    });
+  }
+
   function bind(){
-    $('#h-qlist').addEventListener('click', ev => { const b = ev.target.closest('.qbtn'); if (!b) return; sel = { r: +b.dataset.r, q: +b.dataset.q }; $('#h-ans').value = ''; render(); });
+    $('#h-plan').addEventListener('click', () => { plan = !plan; render(); });
+    $('#h-qlist').addEventListener('click', ev => { const t = ev.target.closest('button.qt[data-act]'); if (t){ planAction(t.closest('.qrow'), t.dataset.act); } });
+    $('#h-qlist').addEventListener('change', ev => { const t = ev.target.closest('select.qsel'); if (t) planAction(t.closest('.qrow'), 'to', t.value); });
+    $('#h-qlist').addEventListener('click', ev => { const b = ev.target.closest('button.qbtn'); if (!b) return; sel = { r: +b.dataset.r, q: +b.dataset.q }; $('#h-ans').value = ''; render(); });
     $('#h-tchips').addEventListener('click', ev => { const b = ev.target.closest('[data-t]'); if (!b) return; team = b.dataset.t; lock = null; save(); $('#h-ans').focus(); });
     $('#h-ans').addEventListener('input', ev => { hi = 0; if (lock && norm(ev.target.value) !== norm(lock.text)){ lock = null; save(); } else renderSugg(); });
     $('#h-ans').addEventListener('keydown', ev => {
