@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Last.fm Deep Stats</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --panel2: #1e222b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa1b2; --accent: #e4405f; --accent2: #ff7a8f;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+  header { padding: 20px 28px 8px; }
+  header h1 { margin: 0; font-size: 22px; letter-spacing: .2px; }
+  header h1 span { color: var(--accent); }
+  header p { margin: 4px 0 0; color: var(--muted); }
+  main { padding: 12px 28px 60px; max-width: 1280px; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin-bottom: 16px; }
+  .form { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; align-items: end; }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  input, select, button { font: inherit; color: var(--text); background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; width: 100%; }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  button { cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); font-weight: 600; }
+  button.primary:hover { background: var(--accent2); }
+  button:disabled { opacity: .5; cursor: default; }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .presets button { width: auto; padding: 4px 10px; font-size: 12px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .check { display: flex; gap: 6px; align-items: center; color: var(--muted); font-size: 13px; margin-top: 10px; }
+  .check input { width: auto; }
+  .small { font-size: 12px; color: var(--muted); }
+  a { color: var(--accent2); }
+  #status { margin-top: 12px; }
+  .bar { height: 6px; background: var(--panel2); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+  .bar > div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+  .kpi { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .kpi .v { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .kpi .l { font-size: 12px; color: var(--muted); }
+  .kpi .s { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  h2 { font-size: 16px; margin: 0 0 12px; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+  .tabs button { width: auto; padding: 6px 12px; }
+  .tabs button.on { background: var(--accent); border-color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; cursor: pointer; user-select: none; }
+  th.num, td.num { text-align: right; }
+  td.name { white-space: normal; max-width: 420px; }
+  td.name .sub { color: var(--muted); font-size: 12px; }
+  .inbar { position: relative; }
+  .inbar i { position: absolute; left: 0; top: 4px; bottom: 4px; background: rgba(228,64,95,.18); border-radius: 3px; z-index: 0; }
+  .inbar span { position: relative; z-index: 1; }
+  .hidden { display: none; }
+  .err { color: #ff8a8a; }
+  #bump { width: 100%; overflow-x: auto; }
+  #bump svg text { fill: var(--text); font-size: 11px; }
+  #bump .grid { stroke: var(--border); }
+  #bump .line { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; transition: opacity .15s; }
+  #bump .dot { stroke: var(--panel); stroke-width: 1.5; transition: opacity .15s; }
+  #bump.hl .line, #bump.hl .dot, #bump.hl .lbl { opacity: .12; }
+  #bump.hl .on { opacity: 1 !important; }
+  #tip { position: fixed; pointer-events: none; background: #000d; border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font-size: 12px; display: none; z-index: 10; }
+  .ctl { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .ctl > div { min-width: 140px; }
+  details summary { cursor: pointer; color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Last.fm <span>Deep Stats</span></h1>
+  <p>Listening minutes, per-artist/track/album playtime and rank-over-time, computed from your scrobbles.</p>
+</header>
+<main>
+  <section class="panel">
+    <div class="form">
+      <div><label for="user">Last.fm username</label><input id="user" placeholder="e.g. rj" autocomplete="off"></div>
+      <div><label for="from">From</label><input id="from" type="date"></div>
+      <div><label for="to">To</label><input id="to" type="date"></div>
+      <div><label for="key">API key <a href="https://www.last.fm/api/account/create" target="_blank" rel="noopener">(get one)</a></label><input id="key" type="password" placeholder="32-char API key" autocomplete="off"></div>
+      <div><button id="go" class="primary">Generate stats</button></div>
+    </div>
+    <div class="presets" id="presets"></div>
+    <label class="check"><input type="checkbox" id="lookup" checked> Look up real track lengths (slower first time, cached after). Off = assume <input id="fallbackSec" type="number" value="210" min="30" style="width:70px;padding:2px 6px"> s per track.</label>
+    <div id="status" class="small"></div>
+    <div class="bar hidden" id="barWrap"><div id="bar"></div></div>
+  </section>
+
+  <div id="results" class="hidden">
+    <section class="kpis" id="kpis" style="margin-bottom:16px"></section>
+
+    <section class="panel">
+      <h2>Playtime leaderboard</h2>
+      <div class="tabs" id="tabs">
+        <button data-k="artist" class="on">Artists</button>
+        <button data-k="track">Tracks</button>
+        <button data-k="album">Albums</button>
+      </div>
+      <div class="row" style="margin-bottom:10px">
+        <input id="filter" placeholder="Filter…" style="max-width:260px">
+        <select id="limit" style="max-width:120px"><option>25</option><option selected>50</option><option>100</option><option value="100000">All</option></select>
+        <button id="csv" style="width:auto">Export CSV</button>
+      </div>
+      <div style="overflow-x:auto"><table id="tbl"></table></div>
+    </section>
+
+    <section class="panel">
+      <h2>Rank over time</h2>
+      <div class="ctl">
+        <div><label>Entity</label><select id="bEntity"><option value="artist">Artists</option><option value="track">Tracks</option><option value="album">Albums</option></select></div>
+        <div><label>Bucket</label><select id="bBucket"><option value="auto">Auto</option><option value="day">Day</option><option value="week">Week</option><option value="month">Month</option><option value="year">Year</option></select></div>
+        <div><label>Ranked by</label><select id="bMetric"><option value="min">Minutes</option><option value="n">Scrobbles</option></select></div>
+        <div><label>Show top</label><select id="bTop"><option>5</option><option selected>10</option><option>15</option><option>20</option></select></div>
+      </div>
+      <div id="bump"></div>
+      <p class="small">Each line is one item's rank in each period. Gaps mean it fell out of the top N that period. Hover a line or label to highlight it.</p>
+    </section>
+
+    <details class="panel"><summary>Notes on how minutes are calculated</summary>
+      <p class="small" id="notes"></p>
+    </details>
+  </div>
+</main>
+<div id="tip"></div>
+
+<script>
+(() => {
+'use strict';
+const API = 'https://ws.audioscrobbler.com/2.0/';
+const $ = id => document.getElementById(id);
+const LS = { key: 'lfm_apikey', user: 'lfm_user', dur: 'lfm_durcache_v1' };
+const PALETTE = ['#e4405f','#4cc9f0','#f9c74f','#90be6d','#b388ff','#f8961e','#43aa8b','#ff70a6','#577590','#e9ff70',
+                 '#ff9770','#70d6ff','#c77dff','#8ac926','#ffca3a','#1982c4','#ff595e','#6a4c93','#00f5d4','#f15bb5'];
+
+// ---------- persistence ----------
+$('key').value = localStorage.getItem(LS.key) || '';
+$('user').value = localStorage.getItem(LS.user) || '';
+let durCache = {};
+try { durCache = JSON.parse(localStorage.getItem(LS.dur) || '{}'); } catch { durCache = {}; }
+const saveDurCache = () => { try { localStorage.setItem(LS.dur, JSON.stringify(durCache)); } catch (e) { console.warn('cache full', e); } };
+
+// ---------- dates ----------
+const pad = n => String(n).padStart(2, '0');
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const today = new Date();
+const setRange = (a, b) => { $('from').value = iso(a); $('to').value = iso(b); };
+const daysAgo = n => { const d = new Date(); d.setDate(d.getDate() - n); return d; };
+setRange(daysAgo(29), today);
+const presets = [
+  ['7 days', () => setRange(daysAgo(6), today)],
+  ['30 days', () => setRange(daysAgo(29), today)],
+  ['90 days', () => setRange(daysAgo(89), today)],
+  ['This month', () => setRange(new Date(today.getFullYear(), today.getMonth(), 1), today)],
+  ['This year', () => setRange(new Date(today.getFullYear(), 0, 1), today)],
+  ['Last year', () => setRange(new Date(today.getFullYear() - 1, 0, 1), new Date(today.getFullYear() - 1, 11, 31))],
+  ['Last 12 months', () => setRange(daysAgo(364), today)],
+];
+for (const [name, fn] of presets) {
+  const b = document.createElement('button'); b.textContent = name; b.onclick = fn; $('presets').appendChild(b);
+}
+
+// ---------- API ----------
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function call(params, tries = 5) {
+  const url = API + '?' + new URLSearchParams({ ...params, api_key: $('key').value.trim(), format: 'json' });
+  for (let i = 0; i < tries; i++) {
+    let res, j;
+    try { res = await fetch(url); j = await res.json(); }
+    catch (e) { if (i === tries - 1) throw e; await sleep(800 * 2 ** i); continue; }
+    if (j && j.error) {
+      // 29 = rate limit, 8/11/16 = transient backend errors
+      if ([29, 8, 11, 16].includes(j.error) && i < tries - 1) { await sleep(1000 * 2 ** i); continue; }
+      const err = new Error(j.message || ('Last.fm error ' + j.error)); err.code = j.error; throw err;
+    }
+    if (!res.ok && i < tries - 1) { await sleep(800 * 2 ** i); continue; }
+    return j;
+  }
+}
+// run tasks with limited concurrency
+async function pool(items, n, fn, onTick) {
+  let i = 0, done = 0;
+  const workers = Array.from({ length: Math.min(n, items.length) }, async () => {
+    while (i < items.length) { const idx = i++; await fn(items[idx], idx); done++; onTick && onTick(done); }
+  });
+  await Promise.all(workers);
+}
+const arr = x => x == null ? [] : Array.isArray(x) ? x : [x];
+
+async function fetchScrobbles(user, from, to, progress) {
+  const base = { method: 'user.getrecenttracks', user, from, to, limit: 200, extended: 0 };
+  const first = await call({ ...base, page: 1 });
+  const meta = first.recenttracks['@attr'];
+  const totalPages = +meta.totalPages || 1;
+  const pages = [first];
+  progress(1, totalPages, +meta.total);
+  const rest = Array.from({ length: totalPages - 1 }, (_, k) => k + 2);
+  await pool(rest, 4, async p => { pages[p - 1] = await call({ ...base, page: p }); }, d => progress(d + 1, totalPages, +meta.total));
+  const out = [];
+  for (const pg of pages) for (const t of arr(pg.recenttracks.track)) {
+    if (t['@attr'] && t['@attr'].nowplaying) continue;
+    if (!t.date) continue;
+    out.push({
+      artist: (t.artist && (t.artist['#text'] || t.artist.name)) || 'Unknown',
+      track: t.name || 'Unknown',
+      album: (t.album && t.album['#text']) || '',
+      ts: +t.date.uts,
+    });
+  }
+  // de-dup across page boundaries (new scrobbles can shift pages mid-fetch)
+  const seen = new Set();
+  return out.filter(s => { const k = s.ts + '|' + s.artist + '|' + s.track; if (seen.has(k)) return false; seen.add(k); return true; })
+            .sort((a, b) => a.ts - b.ts);
+}
+
+const tkey = (a, t) => (a + '\u0001' + t).toLowerCase();
+async function fetchDurations(tracks, progress) {
+  const todo = tracks.filter(([a, t]) => !(tkey(a, t) in durCache));
+  let sinceSave = 0;
+  await pool(todo, 5, async ([artist, track]) => {
+    let ms = 0;
+    try {
+      const j = await call({ method: 'track.getInfo', artist, track, autocorrect: 1 }, 3);
+      ms = +(j && j.track && j.track.duration) || 0;
+    } catch (e) { if (e.code === 10 || e.code === 26) throw e; /* bad key: abort */ ms = 0; }
+    durCache[tkey(artist, track)] = ms; // 0 = unknown, cached so we don't re-ask
+    if (++sinceSave >= 50) { saveDurCache(); sinceSave = 0; }
+  }, d => progress(d, todo.length));
+  saveDurCache();
+  return todo.length;
+}
+
+// ---------- state ----------
+let S = null; // { scrobbles: [...with sec], from, to, user, ... }
+let tab = 'artist', sortKey = 'min', sortDir = -1;
+
+$('go').onclick = run;
+for (const id of ['user', 'key']) $(id).addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
+
+function status(msg, frac) {
+  $('status').innerHTML = msg;
+  $('barWrap').classList.toggle('hidden', frac == null);
+  if (frac != null) $('bar').style.width = (frac * 100).toFixed(1) + '%';
+}
+
+async function run() {
+  const user = $('user').value.trim(), key = $('key').value.trim();
+  if (!user || !key) return status('<span class="err">Enter a username and an API key.</span>');
+  const fromD = new Date($('from').value + 'T00:00:00'), toD = new Date($('to').value + 'T23:59:59');
+  if (isNaN(fromD) || isNaN(toD) || fromD > toD) return status('<span class="err">Pick a valid date range.</span>');
+  localStorage.setItem(LS.key, key); localStorage.setItem(LS.user, user);
+  $('go').disabled = true;
+  try {
+    const from = Math.floor(fromD / 1000), to = Math.floor(toD / 1000);
+    const scrobbles = await fetchScrobbles(user, from, to, (p, tp, total) =>
+      status(`Fetching scrobbles… page ${p} / ${tp} (${total.toLocaleString()} scrobbles)`, p / tp));
+    if (!scrobbles.length) { status('No scrobbles in that range.'); $('results').classList.add('hidden'); return; }
+
+    const uniq = new Map();
+    for (const s of scrobbles) uniq.set(tkey(s.artist, s.track), [s.artist, s.track]);
+    const fallbackSec = Math.max(30, +$('fallbackSec').value || 210);
+    let looked = 0;
+    if ($('lookup').checked) {
+      looked = await fetchDurations([...uniq.values()], (d, n) =>
+        status(`Looking up track lengths… ${d} / ${n} new tracks (${(uniq.size - n).toLocaleString()} already cached)`, d / n));
+    }
+    // fallback = average of known durations in this dataset (weighted per unique track), else the user's default
+    const known = [...uniq.keys()].map(k => durCache[k]).filter(ms => ms > 0);
+    const avgSec = $('lookup').checked && known.length ? known.reduce((a, b) => a + b, 0) / known.length / 1000 : fallbackSec;
+    let estimated = 0;
+    for (const s of scrobbles) {
+      const ms = $('lookup').checked ? durCache[tkey(s.artist, s.track)] : 0;
+      if (ms > 0) { s.sec = ms / 1000; s.est = false; } else { s.sec = avgSec; s.est = true; estimated++; }
+    }
+    S = { scrobbles, from: fromD, to: toD, user, avgSec, estimated, uniqTracks: uniq.size, looked, lookup: $('lookup').checked };
+    status(`Done. ${scrobbles.length.toLocaleString()} scrobbles from ${uniq.size.toLocaleString()} unique tracks.`);
+    render();
+  } catch (e) {
+    console.error(e);
+    status(`<span class="err">Error: ${esc(e.message || String(e))}${e.code === 10 ? ' (check your API key)' : e.code === 6 ? ' (user not found?)' : ''}</span>` +
+      (e instanceof TypeError ? '<br>The browser could not reach ws.audioscrobbler.com. If this page is open inside an app preview, download it and open it in Chrome, Safari or Firefox. If it already is, try turning off ad or tracker blockers for this page.' : ''));
+  } finally { $('go').disabled = false; }
+}
+
+// ---------- aggregation ----------
+const keyOf = {
+  artist: s => s.artist.toLowerCase(),
+  track: s => tkey(s.artist, s.track),
+  album: s => s.album ? (s.artist + '\u0001' + s.album).toLowerCase() : null,
+};
+const labelOf = {
+  artist: s => [s.artist, ''],
+  track: s => [s.track, s.artist],
+  album: s => [s.album, s.artist],
+};
+function aggregate(kind, list) {
+  const m = new Map();
+  for (const s of list) {
+    const k = keyOf[kind](s); if (k == null) continue;
+    let r = m.get(k);
+    if (!r) { const [name, sub] = labelOf[kind](s); r = { k, name, sub, n: 0, sec: 0, est: 0, first: s.ts, last: s.ts }; m.set(k, r); }
+    r.n++; r.sec += s.sec; if (s.est) r.est++; r.last = s.ts;
+  }
+  return m;
+}
+
+// ---------- formatting ----------
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmtInt = n => Math.round(n).toLocaleString();
+const fmtHM = sec => { const m = Math.round(sec / 60); const h = Math.floor(m / 60); return h ? `${h}h ${pad(m % 60)}m` : `${m}m`; };
+const fmtDate = ts => new Date(ts * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+
+// ---------- render ----------
+function render() {
+  $('results').classList.remove('hidden');
+  renderKPIs(); renderTable(); renderBump(); renderNotes();
+}
+
+function renderKPIs() {
+  const { scrobbles, from, to } = S;
+  const totalSec = scrobbles.reduce((a, s) => a + s.sec, 0);
+  const days = Math.max(1, Math.ceil((to - from) / 864e5));
+  const artists = aggregate('artist', scrobbles), albums = aggregate('album', scrobbles);
+  const byDay = new Map();
+  for (const s of scrobbles) { const d = iso(new Date(s.ts * 1000)); byDay.set(d, (byDay.get(d) || 0) + s.sec); }
+  const [bestDay, bestSec] = [...byDay].sort((a, b) => b[1] - a[1])[0];
+  const topArtist = [...artists.values()].sort((a, b) => b.sec - a.sec)[0];
+  const kpis = [
+    ['Total listening', fmtInt(totalSec / 60) + ' min', fmtHM(totalSec) + ` · ${(totalSec / 86400).toFixed(1)} days`],
+    ['Scrobbles', fmtInt(scrobbles.length), `${(scrobbles.length / days).toFixed(1)} per day`],
+    ['Avg per day', fmtInt(totalSec / 60 / days) + ' min', `across ${days} days · ${byDay.size} active`],
+    ['Biggest day', fmtInt(bestSec / 60) + ' min', new Date(bestDay + 'T12:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })],
+    ['Top artist', esc(topArtist.name), fmtInt(topArtist.sec / 60) + ' min · ' + (100 * topArtist.sec / totalSec).toFixed(1) + '% of time'],
+    ['Unique', fmtInt(artists.size) + ' artists', `${fmtInt(S.uniqTracks)} tracks · ${fmtInt(albums.size)} albums`],
+  ];
+  $('kpis').innerHTML = kpis.map(([l, v, s]) => `<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`).join('');
+}
+
+function currentRows() {
+  const rows = [...aggregate(tab, S.scrobbles).values()];
+  for (const r of rows) r.min = r.sec / 60;
+  const f = $('filter').value.trim().toLowerCase();
+  const filtered = f ? rows.filter(r => (r.name + ' ' + r.sub).toLowerCase().includes(f)) : rows;
+  filtered.sort((a, b) => {
+    const x = a[sortKey], y = b[sortKey];
+    return (typeof x === 'string' ? x.localeCompare(y) : x - y) * sortDir;
+  });
+  return filtered;
+}
+
+function renderTable() {
+  const rows = currentRows();
+  const lim = +$('limit').value;
+  const maxMin = Math.max(...rows.map(r => r.min), 1);
+  const totalMin = S.scrobbles.reduce((a, s) => a + s.sec, 0) / 60;
+  const cols = [
+    ['#', null, 'num'], ['Name', 'name', ''], ['Minutes', 'min', 'num'], ['Scrobbles', 'n', 'num'],
+    ['% time', null, 'num'], ['Avg len', null, 'num'], ['First', 'first', 'num'], ['Last', 'last', 'num'],
+  ];
+  const arrow = k => k && k === sortKey ? (sortDir < 0 ? ' ▾' : ' ▴') : '';
+  let html = '<thead><tr>' + cols.map(([l, k, c]) => `<th class="${c}" ${k ? `data-s="${k}"` : ''}>${l}${arrow(k)}</th>`).join('') + '</tr></thead><tbody>';
+  rows.slice(0, lim).forEach((r, i) => {
+    const avg = r.sec / r.n;
+    html += `<tr><td class="num">${i + 1}</td>
+      <td class="name">${esc(r.name)}${r.sub ? `<div class="sub">${esc(r.sub)}</div>` : ''}</td>
+      <td class="num inbar"><i style="width:${(100 * r.min / maxMin).toFixed(1)}%"></i><span>${fmtInt(r.min)}</span></td>
+      <td class="num">${fmtInt(r.n)}</td>
+      <td class="num">${(100 * r.min / totalMin).toFixed(1)}%</td>
+      <td class="num" title="${r.est ? r.est + ' of ' + r.n + ' plays use estimated length' : ''}">${Math.floor(avg / 60)}:${pad(Math.round(avg % 60))}${r.est ? '*' : ''}</td>
+      <td class="num">${fmtDate(r.first)}</td><td class="num">${fmtDate(r.last)}</td></tr>`;
+  });
+  html += '</tbody>';
+  $('tbl').innerHTML = html;
+  $('tbl').querySelectorAll('th[data-s]').forEach(th => th.onclick = () => {
+    const k = th.dataset.s; if (sortKey === k) sortDir *= -1; else { sortKey = k; sortDir = k === 'name' ? 1 : -1; } renderTable();
+  });
+}
+$('tabs').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  tab = b.dataset.k; [...$('tabs').children].forEach(x => x.classList.toggle('on', x === b)); renderTable();
+};
+$('filter').oninput = () => S && renderTable();
+$('limit').onchange = () => S && renderTable();
+$('csv').onclick = () => {
+  if (!S) return;
+  const rows = currentRows();
+  const q = v => `"${String(v).replace(/"/g, '""')}"`;
+  const lines = [['name', tab === 'artist' ? '' : 'artist', 'minutes', 'scrobbles', 'first', 'last'].filter((x, i) => i !== 1 || tab !== 'artist').join(',')];
+  for (const r of rows) lines.push([q(r.name), ...(tab === 'artist' ? [] : [q(r.sub)]), r.min.toFixed(1), r.n, iso(new Date(r.first * 1000)), iso(new Date(r.last * 1000))].join(','));
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/csv' }));
+  a.download = `${S.user}-${tab}s-${$('from').value}_${$('to').value}.csv`; a.click();
+};
+
+// ---------- bump chart ----------
+function bucketStart(ts, unit) {
+  const d = new Date(ts * 1000); d.setHours(0, 0, 0, 0);
+  if (unit === 'week') { const dow = (d.getDay() + 6) % 7; d.setDate(d.getDate() - dow); } // Monday
+  if (unit === 'month') d.setDate(1);
+  if (unit === 'year') { d.setMonth(0, 1); }
+  return d;
+}
+function bucketLabel(d, unit) {
+  if (unit === 'year') return String(d.getFullYear());
+  if (unit === 'month') return d.toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+function autoUnit() {
+  const days = (S.to - S.from) / 864e5;
+  return days <= 21 ? 'day' : days <= 180 ? 'week' : days <= 1100 ? 'month' : 'year';
+}
+function renderBump() {
+  const kind = $('bEntity').value, metric = $('bMetric').value, N = +$('bTop').value;
+  const unit = $('bBucket').value === 'auto' ? autoUnit() : $('bBucket').value;
+  // group scrobbles into buckets
+  const buckets = new Map();
+  for (const s of S.scrobbles) {
+    const b = bucketStart(s.ts, unit), k = +b;
+    if (!buckets.has(k)) buckets.set(k, { d: b, list: [] });
+    buckets.get(k).list.push(s);
+  }
+  const cols = [...buckets.values()].sort((a, b) => a.d - b.d);
+  if (cols.length > 120) { $('bump').innerHTML = `<p class="small">Too many periods (${cols.length}). Pick a larger bucket.</p>`; return; }
+  const val = r => metric === 'min' ? r.sec : r.n;
+  const series = new Map(); // key -> {name, sub, ranks: [rank|null], vals: []}
+  cols.forEach((c, ci) => {
+    const ranked = [...aggregate(kind, c.list).values()].sort((a, b) => val(b) - val(a) || b.n - a.n).slice(0, N);
+    ranked.forEach((r, ri) => {
+      if (!series.has(r.k)) series.set(r.k, { name: r.name, sub: r.sub, ranks: Array(cols.length).fill(null), vals: Array(cols.length).fill(0), total: 0 });
+      const s = series.get(r.k); s.ranks[ci] = ri + 1; s.vals[ci] = val(r); s.total += val(r);
+    });
+  });
+  // colour the most prominent series; the rest are grey
+  const ordered = [...series.values()].sort((a, b) => b.total - a.total);
+  ordered.forEach((s, i) => s.color = i < PALETTE.length ? PALETTE[i] : '#5b6170');
+
+  const colW = Math.max(56, Math.min(110, 900 / Math.max(cols.length, 1)));
+  const left = 170, right = 190, top = 28, rowH = 30;
+  const W = left + right + colW * Math.max(cols.length - 1, 1), H = top + rowH * N + 10;
+  const x = i => left + (cols.length === 1 ? colW / 2 : i * colW), y = r => top + (r - 0.5) * rowH;
+  let svg = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
+  for (let r = 1; r <= N; r++) svg += `<line class="grid" x1="${left - 10}" x2="${W - right + 10}" y1="${y(r)}" y2="${y(r)}" stroke-dasharray="2 4"/><text x="${left - 18}" y="${y(r) + 4}" text-anchor="end" fill="#9aa1b2">#${r}</text>`;
+  const labelEvery = Math.ceil(cols.length / Math.floor((W - left - right) / 60 + 1));
+  cols.forEach((c, i) => { if (i % labelEvery === 0 || i === cols.length - 1) svg += `<text x="${x(i)}" y="14" text-anchor="middle" fill="#9aa1b2">${esc(bucketLabel(c.d, unit))}</text>`; });
+  let sid = 0;
+  for (const s of ordered.slice().reverse()) { // draw prominent ones last (on top)
+    const id = 's' + (sid++); s.id = id;
+    // break line into continuous segments
+    let seg = [];
+    const flush = () => { if (seg.length > 1) svg += `<path class="line ${id}" data-id="${id}" stroke="${s.color}" d="M${seg.map(p => p.join(',')).join('L')}"/>`; seg = []; };
+    s.ranks.forEach((r, i) => { if (r == null) flush(); else seg.push([x(i), y(r)]); });
+    flush();
+    s.ranks.forEach((r, i) => {
+      if (r == null) return;
+      const v = metric === 'min' ? fmtInt(s.vals[i] / 60) + ' min' : s.vals[i] + ' scrobbles';
+      svg += `<circle class="dot ${id}" data-id="${id}" cx="${x(i)}" cy="${y(r)}" r="5" fill="${s.color}" data-tip="${esc(s.name)}${s.sub ? ' — ' + esc(s.sub) : ''}<br>${esc(bucketLabel(cols[i].d, unit))}: #${r} · ${v}"/>`;
+    });
+    // labels at first and last appearance
+    const firstI = s.ranks.findIndex(r => r != null), lastI = s.ranks.length - 1 - [...s.ranks].reverse().findIndex(r => r != null);
+    const trunc = t => t.length > 24 ? t.slice(0, 23) + '…' : t;
+    if (lastI === cols.length - 1) svg += `<text class="lbl ${id}" data-id="${id}" x="${x(lastI) + 10}" y="${y(s.ranks[lastI]) + 4}" fill="${s.color}" style="cursor:default">${esc(trunc(s.name))}</text>`;
+    if (firstI === 0) svg += `<text class="lbl ${id}" data-id="${id}" x="${x(0) - 10}" y="${y(s.ranks[0]) + 4}" text-anchor="end" fill="${s.color}" style="cursor:default" dx="-26">${esc(trunc(s.name))}</text>`;
+  }
+  svg += '</svg>';
+  $('bump').innerHTML = svg;
+  const host = $('bump'), tip = $('tip');
+  host.querySelectorAll('[data-id]').forEach(el => {
+    el.addEventListener('mouseenter', e => {
+      host.classList.add('hl'); host.querySelectorAll('.' + el.dataset.id).forEach(n => n.classList.add('on'));
+      if (el.dataset.tip) { tip.innerHTML = el.dataset.tip; tip.style.display = 'block'; }
+    });
+    el.addEventListener('mousemove', e => { tip.style.left = e.clientX + 12 + 'px'; tip.style.top = e.clientY + 12 + 'px'; });
+    el.addEventListener('mouseleave', () => {
+      host.classList.remove('hl'); host.querySelectorAll('.on').forEach(n => n.classList.remove('on')); tip.style.display = 'none';
+    });
+  });
+}
+for (const id of ['bEntity', 'bBucket', 'bMetric', 'bTop']) $(id).onchange = () => S && renderBump();
+
+function renderNotes() {
+  const pct = (100 * S.estimated / S.scrobbles.length).toFixed(1);
+  $('notes').innerHTML = S.lookup
+    ? `Each scrobble counts as one full play of the track, using its length from Last.fm's <code>track.getInfo</code>. Lengths are cached in this browser, so re-runs are fast. ${fmtInt(S.estimated)} scrobbles (${pct}%) had no length on Last.fm and were counted at the average known length for this period (${Math.floor(S.avgSec / 60)}:${pad(Math.round(S.avgSec % 60))}); these are marked * in the Avg len column. Skips and partial plays can't be detected from scrobble data, so totals are an upper-bound estimate of real listening. <button id="clearCache" style="width:auto;padding:2px 8px;font-size:12px">Clear length cache (${Object.keys(durCache).length.toLocaleString()} tracks)</button>`
+    : `Track-length lookup was off, so every scrobble counts as ${Math.round(S.avgSec)} seconds.`;
+  const cc = $('clearCache'); if (cc) cc.onclick = () => { durCache = {}; localStorage.removeItem(LS.dur); renderNotes(); };
+}
+})();
+</script>
+</body>
+</html>

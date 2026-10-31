@@ -14,3 +14,8 @@
   url: https://claude.ai/artifact/S5ecPsjfTv26kCXc3mkkS8
   thumb: regression
   tag: Data 100
+- title: Last.fm Deep Stats
+  description: Listening minutes per artist, track and album, plus how your top artists rank over time. Bring your own Last.fm API key.
+  url: /lastfm/
+  thumb: bump
+  tag: Music
