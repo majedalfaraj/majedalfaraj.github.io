@@ -196,7 +196,7 @@ async function fetchScrobbles(user, from, to, progress) {
   const pages = [first];
   progress(1, totalPages, +meta.total);
   const rest = Array.from({ length: totalPages - 1 }, (_, k) => k + 2);
-  await pool(rest, 4, async p => { pages[p - 1] = await call({ ...base, page: p }); }, d => progress(d + 1, totalPages, +meta.total));
+  await pool(rest, 8, async p => { pages[p - 1] = await call({ ...base, page: p }); }, d => progress(d + 1, totalPages, +meta.total));
   const out = [];
   for (const pg of pages) for (const t of arr(pg.recenttracks.track)) {
     if (t['@attr'] && t['@attr'].nowplaying) continue;
@@ -215,24 +215,40 @@ async function fetchScrobbles(user, from, to, progress) {
 }
 
 const tkey = (a, t) => (a + '\u0001' + t).toLowerCase();
-async function fetchDurations(tracks, progress) {
-  const todo = tracks.filter(([a, t]) => !(tkey(a, t) in durCache));
-  let sinceSave = 0;
-  await pool(todo, 5, async ([artist, track]) => {
+// Look up lengths for tracks not yet cached, most-played first, so the
+// tracks that matter most for the totals get exact lengths soonest.
+async function fetchDurations(todo, isCancelled, onTick) {
+  let sinceSave = 0, done = 0;
+  await pool(todo, 8, async ([artist, track]) => {
+    if (isCancelled()) return;
     let ms = 0;
     try {
       const j = await call({ method: 'track.getInfo', artist, track, autocorrect: 1 }, 3);
       ms = +(j && j.track && j.track.duration) || 0;
     } catch (e) { if (e.code === 10 || e.code === 26) throw e; /* bad key: abort */ ms = 0; }
     durCache[tkey(artist, track)] = ms; // 0 = unknown, cached so we don't re-ask
-    if (++sinceSave >= 50) { saveDurCache(); sinceSave = 0; }
-  }, d => progress(d, todo.length));
+    if (++sinceSave >= 25) { saveDurCache(); sinceSave = 0; }
+  }, d => { done = d; onTick(d); });
   saveDurCache();
-  return todo.length;
+  return done;
+}
+
+// Set each scrobble's seconds from the cache; unknown lengths use the average known length.
+function applyDurations() {
+  const lookup = S.lookup, fallbackSec = S.fallbackSec;
+  const known = lookup ? [...S.uniq.keys()].map(k => durCache[k]).filter(ms => ms > 0) : [];
+  S.avgSec = known.length ? known.reduce((a, b) => a + b, 0) / known.length / 1000 : fallbackSec;
+  S.estimated = 0; S.pending = 0;
+  for (const s of S.scrobbles) {
+    const k = tkey(s.artist, s.track), ms = lookup ? durCache[k] : 0;
+    if (ms > 0) { s.sec = ms / 1000; s.est = false; }
+    else { s.sec = S.avgSec; s.est = true; S.estimated++; if (lookup && !(k in durCache)) S.pending++; }
+  }
 }
 
 // ---------- state ----------
 let S = null; // { scrobbles: [...with sec], from, to, user, ... }
+let runId = 0;
 let tab = 'artist', sortKey = 'min', sortDir = -1;
 
 $('go').onclick = run;
@@ -251,31 +267,36 @@ async function run() {
   if (isNaN(fromD) || isNaN(toD) || fromD > toD) return status('<span class="err">Pick a valid date range.</span>');
   localStorage.setItem(LS.key, key); localStorage.setItem(LS.user, user);
   $('go').disabled = true;
+  runId++;
   try {
     const from = Math.floor(fromD / 1000), to = Math.floor(toD / 1000);
     const scrobbles = await fetchScrobbles(user, from, to, (p, tp, total) =>
       status(`Fetching scrobbles… page ${p} / ${tp} (${total.toLocaleString()} scrobbles)`, p / tp));
     if (!scrobbles.length) { status('No scrobbles in that range.'); $('results').classList.add('hidden'); return; }
 
-    const uniq = new Map();
-    for (const s of scrobbles) uniq.set(tkey(s.artist, s.track), [s.artist, s.track]);
-    const fallbackSec = Math.max(30, +$('fallbackSec').value || 210);
-    let looked = 0;
-    if ($('lookup').checked) {
-      looked = await fetchDurations([...uniq.values()], (d, n) =>
-        status(`Looking up track lengths… ${d} / ${n} new tracks (${(uniq.size - n).toLocaleString()} already cached)`, d / n));
-    }
-    // fallback = average of known durations in this dataset (weighted per unique track), else the user's default
-    const known = [...uniq.keys()].map(k => durCache[k]).filter(ms => ms > 0);
-    const avgSec = $('lookup').checked && known.length ? known.reduce((a, b) => a + b, 0) / known.length / 1000 : fallbackSec;
-    let estimated = 0;
-    for (const s of scrobbles) {
-      const ms = $('lookup').checked ? durCache[tkey(s.artist, s.track)] : 0;
-      if (ms > 0) { s.sec = ms / 1000; s.est = false; } else { s.sec = avgSec; s.est = true; estimated++; }
-    }
-    S = { scrobbles, from: fromD, to: toD, user, avgSec, estimated, uniqTracks: uniq.size, looked, lookup: $('lookup').checked };
-    status(`Done. ${scrobbles.length.toLocaleString()} scrobbles from ${uniq.size.toLocaleString()} unique tracks.`);
+    const uniq = new Map(), plays = new Map();
+    for (const s of scrobbles) { const k = tkey(s.artist, s.track); uniq.set(k, [s.artist, s.track]); plays.set(k, (plays.get(k) || 0) + 1); }
+    const lookup = $('lookup').checked;
+    S = { scrobbles, from: fromD, to: toD, user, uniq, uniqTracks: uniq.size, lookup, fallbackSec: Math.max(30, +$('fallbackSec').value || 210) };
+    applyDurations();
     render();
+    const doneMsg = () => `Done. ${scrobbles.length.toLocaleString()} scrobbles from ${uniq.size.toLocaleString()} unique tracks.`;
+    if (!lookup) { status(doneMsg()); return; }
+
+    const todo = [...uniq.keys()].filter(k => !(k in durCache)).sort((a, b) => plays.get(b) - plays.get(a)).map(k => uniq.get(k));
+    if (!todo.length) { status(doneMsg()); return; }
+    const mine = ++runId, cancelled = () => mine !== runId;
+    let lastRender = Date.now();
+    $('go').disabled = false; // results are usable now; a new run cancels this refinement
+    await fetchDurations(todo, cancelled, d => {
+      if (cancelled()) return;
+      if (Date.now() - lastRender > 1500) { applyDurations(); render(); lastRender = Date.now(); }
+      const exact = 100 * (1 - S.estimated / scrobbles.length);
+      status(`Showing results. Refining track lengths in the background: ${d.toLocaleString()} / ${todo.length.toLocaleString()} new tracks (${exact.toFixed(0)}% of plays exact so far). Lengths are saved, so next time is instant.`, d / todo.length);
+    });
+    if (cancelled()) return;
+    applyDurations(); render();
+    status(doneMsg());
   } catch (e) {
     console.error(e);
     status(`<span class="err">Error: ${esc(e.message || String(e))}${e.code === 10 ? ' (check your API key)' : e.code === 6 ? ' (user not found?)' : ''}</span>` +
@@ -327,7 +348,7 @@ function renderKPIs() {
   const [bestDay, bestSec] = [...byDay].sort((a, b) => b[1] - a[1])[0];
   const topArtist = [...artists.values()].sort((a, b) => b.sec - a.sec)[0];
   const kpis = [
-    ['Total listening', fmtInt(totalSec / 60) + ' min', fmtHM(totalSec) + ` · ${(totalSec / 86400).toFixed(1)} days`],
+    [S.pending ? 'Total listening (refining…)' : 'Total listening', (S.pending ? '~' : '') + fmtInt(totalSec / 60) + ' min', fmtHM(totalSec) + ` · ${(totalSec / 86400).toFixed(1)} days`],
     ['Scrobbles', fmtInt(scrobbles.length), `${(scrobbles.length / days).toFixed(1)} per day`],
     ['Avg per day', fmtInt(totalSec / 60 / days) + ' min', `across ${days} days · ${byDay.size} active`],
     ['Biggest day', fmtInt(bestSec / 60) + ' min', new Date(bestDay + 'T12:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })],
@@ -481,7 +502,7 @@ for (const id of ['bEntity', 'bBucket', 'bMetric', 'bTop']) $(id).onchange = () 
 function renderNotes() {
   const pct = (100 * S.estimated / S.scrobbles.length).toFixed(1);
   $('notes').innerHTML = S.lookup
-    ? `Each scrobble counts as one full play of the track, using its length from Last.fm's <code>track.getInfo</code>. Lengths are cached in this browser, so re-runs are fast. ${fmtInt(S.estimated)} scrobbles (${pct}%) had no length on Last.fm and were counted at the average known length for this period (${Math.floor(S.avgSec / 60)}:${pad(Math.round(S.avgSec % 60))}); these are marked * in the Avg len column. Skips and partial plays can't be detected from scrobble data, so totals are an upper-bound estimate of real listening. <button id="clearCache" style="width:auto;padding:2px 8px;font-size:12px">Clear length cache (${Object.keys(durCache).length.toLocaleString()} tracks)</button>`
+    ? `Each scrobble counts as one full play of the track, using its length from Last.fm's <code>track.getInfo</code>. Lengths are cached in this browser, so re-runs are fast. ${fmtInt(S.estimated)} scrobbles (${pct}%) ${S.pending ? `have no length yet (${fmtInt(S.pending)} still being looked up) and are` : 'had no length on Last.fm and were'} counted at the average known length for this period (${Math.floor(S.avgSec / 60)}:${pad(Math.round(S.avgSec % 60))}); these are marked * in the Avg len column. Skips and partial plays can't be detected from scrobble data, so totals are an upper-bound estimate of real listening. <button id="clearCache" style="width:auto;padding:2px 8px;font-size:12px">Clear length cache (${Object.keys(durCache).length.toLocaleString()} tracks)</button>`
     : `Track-length lookup was off, so every scrobble counts as ${Math.round(S.avgSec)} seconds.`;
   const cc = $('clearCache'); if (cc) cc.onclick = () => { durCache = {}; localStorage.removeItem(LS.dur); renderNotes(); };
 }
