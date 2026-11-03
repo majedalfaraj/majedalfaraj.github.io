@@ -6,7 +6,7 @@ compatibility_date = "2025-06-01"
 
 [vars]
 # Your Spotify app's Client ID (public, not a secret).
-SPOTIFY_CLIENT_ID = "PASTE_CLIENT_ID_HERE"
+SPOTIFY_CLIENT_ID = "74aa047641974390ac859fa610839327"
 # The site allowed to call this Worker from a browser.
 ALLOWED_ORIGIN = "https://majedalfaraj.github.io"
 
