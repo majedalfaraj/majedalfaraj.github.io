@@ -1,0 +1,23 @@
+# Cloudflare Worker that tells approved friends what Majed is playing on Spotify.
+# Setup steps: see README.md in this folder.
+name = "listen-along"
+main = "worker.js"
+compatibility_date = "2025-06-01"
+
+[vars]
+# Your Spotify app's Client ID (public, not a secret).
+SPOTIFY_CLIENT_ID = "PASTE_CLIENT_ID_HERE"
+# The site allowed to call this Worker from a browser.
+ALLOWED_ORIGIN = "https://majedalfaraj.github.io"
+
+# Stores your Spotify refresh token. Create it with:
+#   npx wrangler kv namespace create TOKENS
+# then paste the id it prints below.
+[[kv_namespaces]]
+binding = "TOKENS"
+id = "PASTE_KV_ID_HERE"
+
+# Secrets (set with `npx wrangler secret put NAME`, never commit them):
+#   SPOTIFY_CLIENT_SECRET  from the Spotify developer dashboard
+#   FRIEND_PASSWORDS       comma-separated name:password pairs, e.g. "ali:blue-cactus-42,sara:quiet-otter-9"
+#   SETUP_KEY              any long random string; used once to connect your Spotify account

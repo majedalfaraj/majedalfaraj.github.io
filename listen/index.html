@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Listen Along</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --panel2: #1e222b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa1b2; --accent: #1db954; --accent2: #3be477; --warn: #f0b429; --err: #ff6b6b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; }
+  main { width: 100%; max-width: 440px; padding: 40px 16px 60px; }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  h1 span { color: var(--accent); }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  input, button { font: inherit; color: var(--text); background: var(--panel2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; width: 100%; }
+  input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  button { cursor: pointer; margin-top: 12px; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #06130a; font-weight: 700; }
+  button.primary:hover { background: var(--accent2); }
+  button.ghost { background: transparent; color: var(--muted); }
+  button:disabled { opacity: .5; cursor: default; }
+  .hidden { display: none !important; }
+  .track { display: flex; gap: 14px; align-items: center; }
+  .track img, .track .ph { width: 84px; height: 84px; border-radius: 8px; flex: none; background: var(--panel2); object-fit: cover; }
+  .track .meta { min-width: 0; }
+  .track .name { font-weight: 700; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .track .artist, .track .album { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .track a { color: inherit; text-decoration: none; }
+  .bar { height: 4px; background: var(--panel2); border-radius: 2px; overflow: hidden; margin-top: 14px; }
+  .bar > div { height: 100%; width: 0; background: var(--accent); }
+  .times { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .state { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .dot.live { background: var(--accent); box-shadow: 0 0 0 0 rgba(29,185,84,.6); animation: pulse 1.6s infinite; }
+  @keyframes pulse { 70% { box-shadow: 0 0 0 8px rgba(29,185,84,0); } 100% { box-shadow: 0 0 0 0 rgba(29,185,84,0); } }
+  .msg { margin-top: 12px; font-size: 13px; color: var(--muted); }
+  .msg.warn { color: var(--warn); }
+  .msg.err { color: var(--err); }
+  .foot { margin-top: 18px; font-size: 12px; color: var(--muted); text-align: center; }
+  .foot button { width: auto; margin: 0; padding: 0; border: 0; background: none; color: var(--muted); text-decoration: underline; font-size: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Listen along with <span>Majed</span></h1>
+  <p class="sub">Your Spotify follows whatever he's playing.</p>
+
+  <section id="setup-missing" class="panel hidden">
+    This page isn't connected yet. Majed still needs to finish setup.
+  </section>
+
+  <form id="pw-panel" class="panel hidden">
+    <label for="pw">Password</label>
+    <input id="pw" type="password" autocomplete="current-password" required>
+    <button class="primary" type="submit">Continue</button>
+    <div id="pw-msg" class="msg"></div>
+  </form>
+
+  <section id="player" class="panel hidden">
+    <div class="state"><span id="dot" class="dot"></span><span id="state-text">Checking…</span></div>
+    <div class="track">
+      <div id="art-ph" class="ph"></div>
+      <img id="art" class="hidden" alt="">
+      <div class="meta">
+        <div class="name"><a id="name" target="_blank" rel="noopener">—</a></div>
+        <div id="artist" class="artist"></div>
+        <div id="album" class="album"></div>
+      </div>
+    </div>
+    <div class="bar"><div id="progress"></div></div>
+    <div class="times"><span id="t-pos">0:00</span><span id="t-dur">0:00</span></div>
+
+    <button id="join" class="primary">Listen along</button>
+    <button id="leave" class="ghost hidden">Stop listening along</button>
+    <div id="sync-msg" class="msg"></div>
+  </section>
+
+  <div class="foot hidden" id="foot">
+    Signed in as <span id="who"></span> · <button id="forget">Forget this device</button>
+  </div>
+</main>
+
+<script>
+// ---- config ----------------------------------------------------------------
+// Fill these in after deploying the Worker (see spotify-worker/README.md).
+const CONFIG = {
+  workerUrl: "https://listen-along.YOUR-SUBDOMAIN.workers.dev",
+  clientId: "PASTE_CLIENT_ID_HERE",
+};
+const REDIRECT_URI = location.origin + location.pathname;
+const FRIEND_SCOPES = "user-read-playback-state user-modify-playback-state";
+const POLL_MS = 4000;
+const DRIFT_MS = 3500; // re-seek if more than this far off
+
+// ---- storage (wrapped: private windows can throw) ----------------------------
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+  del(k) { try { localStorage.removeItem(k); } catch {} },
+};
+
+const $ = id => document.getElementById(id);
+let password = store.get("la_pw");
+let host = null;          // last /now-playing response
+let hostAt = 0;           // local time it arrived
+let following = store.get("la_follow") === "1";
+let pollTimer = null;
+let busy = false;
+
+// ---- boot ------------------------------------------------------------------
+(async function boot() {
+  if (CONFIG.workerUrl.includes("YOUR-SUBDOMAIN") || CONFIG.clientId.startsWith("PASTE")) {
+    $("setup-missing").classList.remove("hidden");
+    return;
+  }
+  await finishSpotifyLogin();
+  if (!password) return showPassword();
+  startPolling();
+})();
+
+function showPassword(msg) {
+  $("player").classList.add("hidden");
+  $("foot").classList.add("hidden");
+  $("pw-panel").classList.remove("hidden");
+  $("pw-msg").textContent = msg || "";
+  $("pw-msg").className = "msg" + (msg ? " err" : "");
+  $("pw").focus();
+}
+
+$("pw-panel").addEventListener("submit", e => {
+  e.preventDefault();
+  password = $("pw").value.trim();
+  if (!password) return;
+  store.set("la_pw", password);
+  $("pw-panel").classList.add("hidden");
+  startPolling();
+});
+
+$("forget").addEventListener("click", () => {
+  ["la_pw", "la_follow", "la_sp"].forEach(store.del);
+  location.reload();
+});
+
+$("join").addEventListener("click", async () => {
+  if (!spotifyTokens()) return startSpotifyLogin();
+  setFollowing(true);
+});
+$("leave").addEventListener("click", () => setFollowing(false));
+
+function setFollowing(on) {
+  following = on;
+  store.set("la_follow", on ? "1" : "0");
+  $("join").classList.toggle("hidden", on);
+  $("leave").classList.toggle("hidden", !on);
+  syncMsg(on ? "Syncing your Spotify…" : "");
+  if (on) tick();
+}
+
+// ---- polling Majed's playback ------------------------------------------------
+function startPolling() {
+  $("player").classList.remove("hidden");
+  setFollowing(following && !!spotifyTokens());
+  tick();
+  clearInterval(pollTimer);
+  pollTimer = setInterval(tick, POLL_MS);
+  requestAnimationFrame(drawProgress);
+}
+
+async function tick() {
+  if (busy) return;
+  busy = true;
+  try {
+    const res = await fetch(CONFIG.workerUrl + "/now-playing", { headers: { authorization: "Bearer " + password } });
+    if (res.status === 401) {
+      store.del("la_pw"); password = null; clearInterval(pollTimer);
+      return showPassword("That password didn't work.");
+    }
+    const data = await res.json();
+    if (!res.ok) { stateText("Couldn't reach Spotify. Retrying…", false); return; }
+    host = data; hostAt = Date.now();
+    $("who").textContent = data.friend;
+    $("foot").classList.remove("hidden");
+    render();
+    if (following) await sync();
+  } catch (err) {
+    stateText("Connection problem. Retrying…", false);
+  } finally {
+    busy = false;
+  }
+}
+
+function hostPosition() {
+  if (!host || !host.track) return 0;
+  const p = host.progress_ms + (host.playing ? Date.now() - hostAt : 0);
+  return Math.min(p, host.track.duration_ms || p);
+}
+
+function render() {
+  const t = host && host.track;
+  if (!t) {
+    stateText("Majed isn't playing anything right now.", false);
+    $("name").textContent = "Nothing playing";
+    $("name").removeAttribute("href");
+    $("artist").textContent = "Leave this page open and it'll pick up when he starts.";
+    $("album").textContent = "";
+    $("art").classList.add("hidden"); $("art-ph").classList.remove("hidden");
+    return;
+  }
+  stateText(host.playing ? "Majed is listening now" : "Majed paused", host.playing);
+  $("name").textContent = t.name;
+  if (t.url) $("name").href = t.url;
+  $("artist").textContent = t.artists.join(", ");
+  $("album").textContent = t.album;
+  if (t.image) {
+    if ($("art").src !== t.image) $("art").src = t.image;
+    $("art").classList.remove("hidden"); $("art-ph").classList.add("hidden");
+  }
+}
+
+function drawProgress() {
+  const t = host && host.track;
+  const pos = hostPosition();
+  $("progress").style.width = t && t.duration_ms ? (100 * pos / t.duration_ms) + "%" : "0";
+  $("t-pos").textContent = fmt(pos);
+  $("t-dur").textContent = fmt(t ? t.duration_ms : 0);
+  requestAnimationFrame(drawProgress);
+}
+
+function stateText(text, live) {
+  $("state-text").textContent = text;
+  $("dot").classList.toggle("live", !!live);
+}
+function syncMsg(text, kind) {
+  $("sync-msg").textContent = text;
+  $("sync-msg").className = "msg" + (kind ? " " + kind : "");
+}
+function fmt(ms) {
+  const s = Math.floor((ms || 0) / 1000);
+  return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+}
+
+// ---- keeping the friend's Spotify in sync -----------------------------------
+async function sync() {
+  const t = host && host.track;
+  const me = await sp("GET", "/me/player");
+  if (me === null) return;
+  const mine = me.status === 200 ? await me.json() : null;
+
+  if (!t || !host.playing) {
+    if (mine && mine.is_playing && mine.item && t && mine.item.uri === t.uri) {
+      await sp("PUT", "/me/player/pause");
+    }
+    syncMsg(t ? "Paused with Majed." : "Waiting for Majed to play something.");
+    return;
+  }
+
+  const target = hostPosition();
+  const sameTrack = mine && mine.item && mine.item.uri === t.uri;
+  const drift = sameTrack ? Math.abs((mine.progress_ms || 0) - target) : Infinity;
+  if (sameTrack && mine.is_playing && drift < DRIFT_MS) {
+    syncMsg("In sync ✓", null);
+    return;
+  }
+
+  let deviceId = mine && mine.device && mine.device.id;
+  if (!deviceId) {
+    const d = await sp("GET", "/me/player/devices");
+    if (d === null) return;
+    const list = d.ok ? (await d.json()).devices || [] : [];
+    const pick = list.find(x => x.is_active) || list[0];
+    if (!pick) {
+      syncMsg("Open Spotify on your phone or computer, then this will start playing there.", "warn");
+      return;
+    }
+    deviceId = pick.id;
+  }
+
+  const res = await sp("PUT", "/me/player/play?device_id=" + encodeURIComponent(deviceId), {
+    uris: [t.uri], position_ms: Math.round(hostPosition() + 250),
+  });
+  if (res === null) return;
+  if (res.ok) syncMsg("In sync ✓");
+  else if (res.status === 403) syncMsg("Spotify only allows this for Premium accounts.", "err");
+  else if (res.status === 404) syncMsg("Open Spotify on your phone or computer, then this will start playing there.", "warn");
+  else syncMsg("Spotify didn't accept the request (" + res.status + "). Retrying…", "warn");
+}
+
+// ---- friend's Spotify login (PKCE, no secret needed) --------------------------
+function spotifyTokens() {
+  try { return JSON.parse(store.get("la_sp")); } catch { return null; }
+}
+
+async function startSpotifyLogin() {
+  const verifier = randomString(64);
+  sessionStorage.setItem("la_verifier", verifier);
+  const challenge = base64url(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)));
+  const url = new URL("https://accounts.spotify.com/authorize");
+  url.search = new URLSearchParams({
+    client_id: CONFIG.clientId, response_type: "code", redirect_uri: REDIRECT_URI,
+    scope: FRIEND_SCOPES, code_challenge_method: "S256", code_challenge: challenge,
+  });
+  location.assign(url);
+}
+
+async function finishSpotifyLogin() {
+  const params = new URLSearchParams(location.search);
+  const code = params.get("code");
+  if (!code && !params.get("error")) return;
+  history.replaceState(null, "", location.pathname);
+  if (!code) { syncMsg("Spotify login was cancelled.", "warn"); return; }
+  let verifier = null;
+  try { verifier = sessionStorage.getItem("la_verifier"); } catch {}
+  if (!verifier) return;
+  const tokens = await tokenCall({
+    grant_type: "authorization_code", code, redirect_uri: REDIRECT_URI,
+    client_id: CONFIG.clientId, code_verifier: verifier,
+  });
+  if (tokens) { saveTokens(tokens); store.set("la_follow", "1"); following = true; }
+}
+
+async function accessToken() {
+  const tok = spotifyTokens();
+  if (!tok) return null;
+  if (Date.now() < tok.expiresAt) return tok.access;
+  const fresh = await tokenCall({ grant_type: "refresh_token", refresh_token: tok.refresh, client_id: CONFIG.clientId });
+  if (!fresh) { store.del("la_sp"); setFollowing(false); syncMsg("Spotify logged you out. Tap Listen along to log in again.", "warn"); return null; }
+  return saveTokens(fresh, tok.refresh).access;
+}
+
+async function tokenCall(params) {
+  const res = await fetch("https://accounts.spotify.com/api/token", {
+    method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(params),
+  });
+  return res.ok ? res.json() : null;
+}
+
+function saveTokens(t, oldRefresh) {
+  const tok = { access: t.access_token, refresh: t.refresh_token || oldRefresh, expiresAt: Date.now() + (t.expires_in - 60) * 1000 };
+  store.set("la_sp", JSON.stringify(tok));
+  return tok;
+}
+
+// Calls the friend's own Spotify API. Returns the Response, or null if not logged in.
+async function sp(method, path, body) {
+  const token = await accessToken();
+  if (!token) return null;
+  return fetch("https://api.spotify.com/v1" + path, {
+    method,
+    headers: { authorization: "Bearer " + token, ...(body ? { "content-type": "application/json" } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+}
+
+function randomString(n) {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const bytes = crypto.getRandomValues(new Uint8Array(n));
+  return Array.from(bytes, b => chars[b % chars.length]).join("");
+}
+function base64url(buf) {
+  return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+</script>
+</body>
+</html>
