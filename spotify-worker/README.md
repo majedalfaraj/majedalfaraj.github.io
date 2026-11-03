@@ -55,11 +55,26 @@ const CONFIG = {
 
 Commit and push. The site redeploys on its own.
 
-## Day to day
+## Day to day: the admin page
 
-- **Add a friend:** add them in the Spotify dashboard's User Management, then add a `name:password` pair to `FRIEND_PASSWORDS` (`npx wrangler secret put FRIEND_PASSWORDS` replaces the whole list).
-- **Remove a friend:** take their pair out of `FRIEND_PASSWORDS`. Their saved password stops working right away.
-- **What friends do:** open `/listen/`, enter their password once, tap **Listen along**, log in with Spotify the first time. After that, as long as the page is open and Spotify is open on one of their devices, it plays what you play, at the same spot, and follows skips, seeks and pauses within a few seconds.
+Manage friends at **`majedalfaraj.github.io/listen/admin/`**. To turn it on, set an admin password once and redeploy:
+
+```sh
+cd spotify-worker
+git pull
+npx wrangler secret put ADMIN_PASSWORD   # your own password for the admin page
+npx wrangler deploy
+```
+
+On the admin page you can:
+
+- **Add a friend:** type a name, and either type a password or leave it blank to generate one. **Copy invite** copies the link and password to send them. Also add the email on their Spotify account in the Spotify dashboard under **Settings → User Management**, because Spotify has no API for that list.
+- **Change a password:** save the same name again with a new password.
+- **Remove a friend:** click **Remove**. Their password stops working within about 30 seconds. You can also remove them from User Management in Spotify.
+
+The first time you save anything there, the friend list moves from the `FRIEND_PASSWORDS` secret into the Worker's storage, and the secret is no longer used.
+
+**What friends do:** open `/listen/`, enter their password once, tap **Listen along**, and log in with Spotify the first time. After that, as long as the page is open and Spotify is open on one of their devices, it plays what you play, at the same spot, and follows skips, seeks and pauses within a few seconds.
 
 ## Limits worth knowing
 
