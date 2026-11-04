@@ -15,7 +15,23 @@
   header h1 { margin: 0; font-size: 22px; letter-spacing: .2px; }
   header h1 span { color: var(--accent); }
   header p { margin: 4px 0 0; color: var(--muted); }
-  main { padding: 12px 28px 60px; max-width: 1280px; }
+  .layout { display: block; }
+  main { padding: 12px 28px 60px; max-width: 1280px; min-width: 0; }
+  aside { padding: 0 28px 60px; max-width: 1280px; }
+  @media (min-width: 1500px) {
+    .layout { display: grid; grid-template-columns: minmax(0, 1280px) 400px; align-items: start; }
+    aside { padding: 12px 28px 60px 0; position: sticky; top: 0; max-height: 100vh; overflow-y: auto; }
+  }
+  .sim { list-style: none; margin: 0; padding: 0; }
+  .sim li { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: baseline; padding: 7px 0; border-bottom: 1px solid var(--border); }
+  .sim li:last-child { border-bottom: 0; }
+  .sim .rk { color: var(--muted); font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+  .sim a { color: var(--text); text-decoration: none; font-weight: 600; }
+  .sim a:hover { color: var(--accent2); text-decoration: underline; }
+  .sim .why { color: var(--muted); font-size: 12px; margin-top: 1px; }
+  .sim .m { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .meter { display: inline-block; width: 42px; height: 5px; background: var(--panel2); border-radius: 3px; vertical-align: middle; margin-left: 6px; overflow: hidden; }
+  .meter i { display: block; height: 100%; background: var(--accent); }
   .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin-bottom: 16px; }
   .form { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; align-items: end; }
   label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
@@ -73,6 +89,7 @@
   <h1>Last.fm <span>Deep Stats</span></h1>
   <p>Listening minutes, per-artist/track/album playtime and rank-over-time, computed from your scrobbles.</p>
 </header>
+<div class="layout">
 <main>
   <section class="panel">
     <div class="form">
@@ -123,6 +140,14 @@
     </details>
   </div>
 </main>
+<aside id="side" class="hidden">
+  <section class="panel">
+    <h2>Discover: similar artists</h2>
+    <p class="small" style="margin:-6px 0 10px">Artists Last.fm calls similar to your top artists in this range, that you didn't play in it. Weighted by how much you listened to each source artist.</p>
+    <div id="simBody" class="small">Loading…</div>
+  </section>
+</aside>
+</div>
 <div id="tip"></div>
 
 <script>
@@ -146,6 +171,9 @@ const pad = n => String(n).padStart(2, '0');
 const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const today = new Date();
 const setRange = (a, b) => { $('from').value = iso(a); $('to').value = iso(b); };
+// Inclusive count of calendar days between two local dates. Uses UTC midnights so a
+// daylight-saving change inside the range (a 23h or 25h day) can't add or drop a day.
+const calDays = (a, b) => Math.round((Date.UTC(b.getFullYear(), b.getMonth(), b.getDate()) - Date.UTC(a.getFullYear(), a.getMonth(), a.getDate())) / 864e5) + 1;
 const daysAgo = n => { const d = new Date(); d.setDate(d.getDate() - n); return d; };
 setRange(daysAgo(29), today);
 const presets = [
@@ -335,13 +363,13 @@ const fmtDate = ts => new Date(ts * 1000).toLocaleDateString(undefined, { year: 
 // ---------- render ----------
 function render() {
   $('results').classList.remove('hidden');
-  renderKPIs(); renderTable(); renderBump(); renderNotes();
+  renderKPIs(); renderTable(); renderBump(); renderNotes(); loadSimilar();
 }
 
 function renderKPIs() {
   const { scrobbles, from, to } = S;
   const totalSec = scrobbles.reduce((a, s) => a + s.sec, 0);
-  const days = Math.max(1, Math.ceil((to - from) / 864e5));
+  const days = calDays(from, to);
   const artists = aggregate('artist', scrobbles), albums = aggregate('album', scrobbles);
   const byDay = new Map();
   for (const s of scrobbles) { const d = iso(new Date(s.ts * 1000)); byDay.set(d, (byDay.get(d) || 0) + s.sec); }
@@ -350,7 +378,7 @@ function renderKPIs() {
   const kpis = [
     [S.pending ? 'Total listening (refining…)' : 'Total listening', (S.pending ? '~' : '') + fmtInt(totalSec / 60) + ' min', fmtHM(totalSec) + ` · ${(totalSec / 86400).toFixed(1)} days`],
     ['Scrobbles', fmtInt(scrobbles.length), `${(scrobbles.length / days).toFixed(1)} per day`],
-    ['Avg per day', fmtInt(totalSec / 60 / days) + ' min', `across ${days} days · ${byDay.size} active`],
+    ['Avg per day', fmtInt(totalSec / 60 / days) + ' min', `across ${days} day${days === 1 ? '' : 's'} · ${byDay.size} active`],
     ['Biggest day', fmtInt(bestSec / 60) + ' min', new Date(bestDay + 'T12:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })],
     ['Top artist', esc(topArtist.name), fmtInt(topArtist.sec / 60) + ' min · ' + (100 * topArtist.sec / totalSec).toFixed(1) + '% of time'],
     ['Unique', fmtInt(artists.size) + ' artists', `${fmtInt(S.uniqTracks)} tracks · ${fmtInt(albums.size)} albums`],
@@ -428,7 +456,7 @@ function bucketLabel(d, unit) {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 function autoUnit() {
-  const days = (S.to - S.from) / 864e5;
+  const days = calDays(S.from, S.to);
   return days <= 21 ? 'day' : days <= 180 ? 'week' : days <= 1100 ? 'month' : 'year';
 }
 function renderBump() {
@@ -498,6 +526,46 @@ function renderBump() {
   });
 }
 for (const id of ['bEntity', 'bBucket', 'bMetric', 'bTop']) $(id).onchange = () => S && renderBump();
+
+// ---------- similar artists ----------
+let simFor = null; // runId the panel was built for
+const simCache = new Map();
+async function loadSimilar() {
+  if (simFor === runId) return; // build once per run, not on every refresh
+  const mine = simFor = runId;
+  $('side').classList.remove('hidden');
+  $('simBody').textContent = 'Loading…';
+  const artists = [...aggregate('artist', S.scrobbles).values()].sort((a, b) => b.sec - a.sec);
+  const played = new Set(artists.map(a => a.name.toLowerCase()));
+  const top = artists.slice(0, 8);
+  const topSec = top.reduce((a, r) => a + r.sec, 0) || 1;
+  const score = new Map();
+  await pool(top, 4, async src => {
+    const k = src.name.toLowerCase();
+    if (!simCache.has(k)) {
+      try {
+        const j = await call({ method: 'artist.getSimilar', artist: src.name, limit: 40, autocorrect: 1 }, 3);
+        simCache.set(k, arr(j && j.similarartists && j.similarartists.artist).map(a => ({ name: a.name, match: +a.match || 0, url: a.url })));
+      } catch { simCache.set(k, []); }
+    }
+    const w = src.sec / topSec;
+    for (const a of simCache.get(k)) {
+      const n = a.name.toLowerCase();
+      if (played.has(n)) continue;
+      let r = score.get(n);
+      if (!r) { r = { name: a.name, url: a.url, s: 0, via: [] }; score.set(n, r); }
+      r.s += a.match * w; r.via.push([src.name, a.match * w]);
+    }
+  });
+  if (mine !== simFor) return;
+  const list = [...score.values()].sort((a, b) => b.s - a.s).slice(0, 20);
+  if (!list.length) { $('simBody').textContent = 'No suggestions found for these artists.'; return; }
+  const max = list[0].s;
+  $('simBody').innerHTML = '<ul class="sim">' + list.map((r, i) => {
+    const via = r.via.sort((a, b) => b[1] - a[1]).slice(0, 2).map(v => esc(v[0])).join(', ');
+    return `<li><span class="rk">${i + 1}</span><div><a href="${esc(r.url || 'https://www.last.fm/music/' + encodeURIComponent(r.name))}" target="_blank" rel="noopener">${esc(r.name)}</a><div class="why">like ${via}${r.via.length > 2 ? ` +${r.via.length - 2}` : ''}</div></div><span class="m"><span class="meter"><i style="width:${(100 * r.s / max).toFixed(0)}%"></i></span></span></li>`;
+  }).join('') + '</ul>';
+}
 
 function renderNotes() {
   const pct = (100 * S.estimated / S.scrobbles.length).toFixed(1);
