@@ -286,7 +286,7 @@ async function sync() {
   });
   if (res === null) return;
   if (res.ok) syncMsg("In sync ✓");
-  else if (res.status === 403) syncMsg("Spotify only allows this for Premium accounts.", "err");
+  else if (res.status === 403) syncMsg("Spotify blocked this. You need Spotify Premium, and Majed needs to add your Spotify email to his app. Ask him to check.", "err");
   else if (res.status === 404) syncMsg("Open Spotify on your phone or computer, then this will start playing there.", "warn");
   else syncMsg("Spotify didn't accept the request (" + res.status + "). Retrying…", "warn");
 }
