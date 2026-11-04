@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Listen Along Admin</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --panel2: #1e222b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa1b2; --accent: #1db954; --accent2: #3be477; --err: #ff6b6b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; }
+  main { width: 100%; max-width: 520px; padding: 40px 16px 60px; }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  h2 { margin: 0 0 12px; font-size: 16px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 16px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  input, button { font: inherit; color: var(--text); background: var(--panel2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; width: 100%; }
+  input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  button { cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #06130a; font-weight: 700; }
+  button.primary:hover { background: var(--accent2); }
+  button.small { width: auto; padding: 6px 10px; font-size: 13px; }
+  button.danger { color: var(--err); }
+  .hidden { display: none !important; }
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; min-width: 0; }
+  .stack > * + * { margin-top: 12px; }
+  .friend { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); }
+  .friend:first-child { border-top: 0; }
+  .friend .who { flex: 1; min-width: 0; }
+  .friend .name { font-weight: 600; }
+  .friend code { color: var(--muted); font-size: 13px; word-break: break-all; }
+  .msg { margin-top: 10px; font-size: 13px; color: var(--muted); }
+  .msg.err { color: var(--err); }
+  .note { font-size: 13px; color: var(--muted); }
+  .note a { color: var(--accent2); }
+  .empty { color: var(--muted); font-size: 14px; }
+  @media (max-width: 420px) { .row { flex-direction: column; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Listen along admin</h1>
+  <p class="sub">Choose who can listen along with you.</p>
+
+  <form id="login" class="panel stack">
+    <div>
+      <label for="admin-pw">Admin password</label>
+      <input id="admin-pw" type="password" autocomplete="current-password" required>
+    </div>
+    <button class="primary" type="submit">Log in</button>
+    <div id="login-msg" class="msg"></div>
+  </form>
+
+  <section id="app" class="hidden">
+    <div class="panel">
+      <h2>Friends</h2>
+      <div id="list"></div>
+    </div>
+
+    <form id="add" class="panel stack">
+      <h2>Add or change a friend</h2>
+      <div class="row">
+        <div><label for="f-name">Name</label><input id="f-name" required maxlength="40" placeholder="ali"></div>
+        <div><label for="f-pw">Password</label><input id="f-pw" placeholder="leave blank to generate"></div>
+      </div>
+      <button class="primary" type="submit">Save friend</button>
+      <div id="add-msg" class="msg"></div>
+      <p class="note">New friend? Also add the email on their Spotify account in your
+        <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">Spotify dashboard</a>
+        under Settings → User Management, or Spotify will block their login.</p>
+    </form>
+
+    <p class="note" style="text-align:center">
+      Friend page: <a href="../">majedalfaraj.github.io/listen/</a> ·
+      <a href="#" id="logout">Log out</a>
+    </p>
+  </section>
+</main>
+
+<script>
+const WORKER_URL = "https://listen-along.malfaraj.workers.dev";
+
+const store = {
+  get(k) { try { return sessionStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { sessionStorage.setItem(k, v); } catch {} },
+  del(k) { try { sessionStorage.removeItem(k); } catch {} },
+};
+const $ = id => document.getElementById(id);
+let adminPw = store.get("la_admin");
+
+async function api(method, path, body) {
+  const res = await fetch(WORKER_URL + "/admin/friends" + (path || ""), {
+    method,
+    headers: { authorization: "Bearer " + adminPw, ...(body ? { "content-type": "application/json" } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401) { logout("Wrong admin password."); throw new Error("auth"); }
+  if (!res.ok) throw new Error(data.error || "Something went wrong (" + res.status + ").");
+  return data;
+}
+
+async function load() {
+  try {
+    const { friends } = await api("GET");
+    $("login").classList.add("hidden");
+    $("app").classList.remove("hidden");
+    render(friends);
+  } catch (e) {
+    if (e.message !== "auth") showLoginError("Couldn't reach the Worker. Is it deployed with ADMIN_PASSWORD set?");
+  }
+}
+
+function render(friends) {
+  const list = $("list");
+  list.textContent = "";
+  const names = Object.keys(friends).sort((a, b) => a.localeCompare(b));
+  if (!names.length) {
+    list.innerHTML = '<div class="empty">No friends yet. Add one below.</div>';
+    return;
+  }
+  for (const name of names) {
+    const row = document.createElement("div");
+    row.className = "friend";
+    const who = document.createElement("div");
+    who.className = "who";
+    const n = document.createElement("div"); n.className = "name"; n.textContent = name;
+    const p = document.createElement("code"); p.textContent = friends[name];
+    who.append(n, p);
+    const copy = document.createElement("button");
+    copy.className = "small"; copy.type = "button"; copy.textContent = "Copy invite";
+    copy.onclick = async () => {
+      const text = "Listen along with me: https://majedalfaraj.github.io/listen/ (password: " + friends[name] + ")";
+      try { await navigator.clipboard.writeText(text); copy.textContent = "Copied"; }
+      catch { prompt("Copy this:", text); }
+      setTimeout(() => (copy.textContent = "Copy invite"), 1500);
+    };
+    const del = document.createElement("button");
+    del.className = "small danger"; del.type = "button"; del.textContent = "Remove";
+    del.onclick = async () => {
+      if (!confirm("Remove " + name + "? Their password stops working right away.")) return;
+      del.disabled = true;
+      try { render((await api("DELETE", "/" + encodeURIComponent(name))).friends); }
+      catch (e) { del.disabled = false; if (e.message !== "auth") alert(e.message); }
+    };
+    row.append(who, copy, del);
+    list.append(row);
+  }
+}
+
+$("login").addEventListener("submit", e => {
+  e.preventDefault();
+  adminPw = $("admin-pw").value.trim();
+  store.set("la_admin", adminPw);
+  $("login-msg").textContent = "";
+  load();
+});
+
+$("add").addEventListener("submit", async e => {
+  e.preventDefault();
+  const msg = $("add-msg");
+  msg.className = "msg"; msg.textContent = "Saving…";
+  try {
+    const { friends } = await api("POST", "", { name: $("f-name").value, password: $("f-pw").value });
+    render(friends);
+    msg.textContent = "Saved. Use Copy invite to send it.";
+    $("f-name").value = ""; $("f-pw").value = "";
+  } catch (err) {
+    if (err.message !== "auth") { msg.className = "msg err"; msg.textContent = err.message; }
+  }
+});
+
+$("logout").addEventListener("click", e => { e.preventDefault(); logout(); });
+
+function logout(msg) {
+  store.del("la_admin"); adminPw = null;
+  $("app").classList.add("hidden");
+  $("login").classList.remove("hidden");
+  if (msg) showLoginError(msg);
+}
+function showLoginError(text) {
+  $("login-msg").className = "msg err";
+  $("login-msg").textContent = text;
+}
+
+if (adminPw) load();
+</script>
+</body>
+</html>

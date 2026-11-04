@@ -19,5 +19,7 @@ id = "PASTE_KV_ID_HERE"
 
 # Secrets (set with `npx wrangler secret put NAME`, never commit them):
 #   SPOTIFY_CLIENT_SECRET  from the Spotify developer dashboard
-#   FRIEND_PASSWORDS       comma-separated name:password pairs, e.g. "ali:blue-cactus-42,sara:quiet-otter-9"
+#   ADMIN_PASSWORD         your password for /listen/admin/ (where you add and remove friends)
+#   FRIEND_PASSWORDS       optional starting list, name:password pairs, e.g. "ali:blue-cactus-42"
+#                          (once you save anything on the admin page, the list lives in KV instead)
 #   SETUP_KEY              any long random string; used once to connect your Spotify account

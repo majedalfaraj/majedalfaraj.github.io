@@ -21,6 +21,7 @@ export default {
       if (url.pathname === "/setup") return setup(url, env);
       if (url.pathname === "/callback") return callback(url, env);
       if (url.pathname === "/now-playing") return await nowPlaying(request, env, cors);
+      if (url.pathname.startsWith("/admin/friends")) return await adminFriends(request, url, env, cors);
       return new Response("Not found", { status: 404 });
     } catch (err) {
       return json({ error: "server", message: String(err && err.message || err) }, 500, cors);
@@ -71,7 +72,7 @@ async function callback(url, env) {
 // ---- friend endpoint -------------------------------------------------------
 
 async function nowPlaying(request, env, cors) {
-  const friend = checkPassword(request, env);
+  const friend = await checkPassword(request, env);
   if (!friend) return json({ error: "password" }, 401, cors);
 
   if (cached && Date.now() - cached.at < CACHE_MS) {
@@ -120,22 +121,95 @@ function shape(data) {
   };
 }
 
-function checkPassword(request, env) {
-  const header = request.headers.get("authorization") || "";
-  const given = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+async function checkPassword(request, env) {
+  const given = bearer(request);
   if (!given) return null;
-  for (const pair of (env.FRIEND_PASSWORDS || "").split(",")) {
-    const i = pair.indexOf(":");
-    if (i < 1) continue;
-    const name = pair.slice(0, i).trim();
-    const pass = pair.slice(i + 1).trim();
+  const friends = await loadFriends(env);
+  for (const [name, pass] of Object.entries(friends)) {
     if (pass && safeEqual(given, pass)) return name;
   }
   return null;
 }
 
+function bearer(request) {
+  const header = request.headers.get("authorization") || "";
+  return header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+}
+
+// ---- friend list -----------------------------------------------------------
+// Stored in KV as {"name": "password"}. Until the admin page saves for the
+// first time, the FRIEND_PASSWORDS secret is used as the starting list.
+
+let friendsCache = null; // { data, at }
+
+async function loadFriends(env) {
+  if (friendsCache && Date.now() - friendsCache.at < 30000) return friendsCache.data;
+  const stored = await env.TOKENS.get("friends", "json");
+  const data = stored || parseSecretFriends(env.FRIEND_PASSWORDS);
+  friendsCache = { data, at: Date.now() };
+  return data;
+}
+
+async function saveFriends(env, data) {
+  await env.TOKENS.put("friends", JSON.stringify(data));
+  friendsCache = { data, at: Date.now() };
+}
+
+function parseSecretFriends(raw) {
+  const out = {};
+  for (const pair of (raw || "").split(",")) {
+    const i = pair.indexOf(":");
+    if (i < 1) continue;
+    const name = pair.slice(0, i).trim();
+    const pass = pair.slice(i + 1).trim();
+    if (name && pass) out[name] = pass;
+  }
+  return out;
+}
+
+// ---- admin endpoint --------------------------------------------------------
+
+async function adminFriends(request, url, env, cors) {
+  if (!env.ADMIN_PASSWORD || !safeEqual(bearer(request), env.ADMIN_PASSWORD)) {
+    return json({ error: "password" }, 401, cors);
+  }
+  const friends = { ...(await loadFriends(env)) };
+
+  if (request.method === "GET") return json({ friends }, 200, cors);
+
+  if (request.method === "POST") {
+    const body = await request.json().catch(() => ({}));
+    const name = String(body.name || "").trim().slice(0, 40);
+    if (!name) return json({ error: "Name is required." }, 400, cors);
+    const password = String(body.password || "").trim() || randomPassword();
+    if (password.length < 6) return json({ error: "Password must be at least 6 characters." }, 400, cors);
+    if (Object.entries(friends).some(([n, p]) => n !== name && p === password)) {
+      return json({ error: "Another friend already has that password." }, 400, cors);
+    }
+    friends[name] = password;
+    await saveFriends(env, friends);
+    return json({ friends }, 200, cors);
+  }
+
+  if (request.method === "DELETE") {
+    const name = decodeURIComponent(url.pathname.slice("/admin/friends/".length));
+    delete friends[name];
+    await saveFriends(env, friends);
+    return json({ friends }, 200, cors);
+  }
+
+  return json({ error: "method" }, 405, cors);
+}
+
+function randomPassword() {
+  const adj = ["blue", "quiet", "neon", "lucky", "velvet", "rapid", "amber", "cosmic", "mellow", "silver"];
+  const noun = ["otter", "cactus", "falcon", "maple", "comet", "river", "tiger", "pixel", "echo", "lotus"];
+  const b = crypto.getRandomValues(new Uint8Array(3));
+  return `${adj[b[0] % 10]}-${noun[b[1] % 10]}-${10 + (b[2] % 90)}`;
+}
+
 function safeEqual(a, b) {
-  if (a.length !== b.length) return false;
+  if (!a || !b || a.length !== b.length) return false;
   let diff = 0;
   for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return diff === 0;
@@ -180,8 +254,8 @@ function corsHeaders(request, env) {
   const allowed = (env.ALLOWED_ORIGIN || "").split(",").map(s => s.trim());
   return {
     "access-control-allow-origin": allowed.includes(origin) ? origin : allowed[0] || "",
-    "access-control-allow-methods": "GET, OPTIONS",
-    "access-control-allow-headers": "authorization",
+    "access-control-allow-methods": "GET, POST, DELETE, OPTIONS",
+    "access-control-allow-headers": "authorization, content-type",
     "access-control-max-age": "86400",
     vary: "origin",
   };
