@@ -79,6 +79,7 @@ The first time you save anything there, the friend list moves from the `FRIEND_P
 ## Limits worth knowing
 
 - The friend's page has to stay open (a phone tab in the background may get paused by the OS).
-- Sync checks every 4 seconds and re-seeks when they drift more than about 3.5 seconds, so it's close but not sample-exact.
+- While you're playing, the page checks every 1.5 seconds (and right when your song should end), and re-seeks when they drift more than about 1.5 seconds. It's close, but not sample-exact.
+- Phones pause background tabs, so on a phone the page works best left open on screen. On a computer, a background tab is fine.
 - If the friend starts playing something else themselves, the page will switch them back to your song. They tap **Stop listening along** to break off.
 - Spotify does not let apps create or share Jam links, so this syncs playback instead of joining a Jam. You both hear the same thing, but they can't add to your queue.

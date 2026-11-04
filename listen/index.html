@@ -95,8 +95,11 @@ const CONFIG = {
 };
 const REDIRECT_URI = location.origin + location.pathname;
 const FRIEND_SCOPES = "user-read-playback-state user-modify-playback-state";
-const POLL_MS = 4000;
-const DRIFT_MS = 3500; // re-seek if more than this far off
+const POLL_MS = 1500;       // while Majed is playing
+const IDLE_POLL_MS = 4000;  // while nothing is playing
+const DRIFT_MS = 1500;      // re-seek if more than this far off
+const SETTLE_MS = 3000;     // after starting a song, give Spotify this long before judging drift
+const START_LEAD_MS = 300;  // Spotify takes a moment to start audio, so aim slightly ahead
 
 // ---- storage (wrapped: private windows can throw) ----------------------------
 const store = {
@@ -112,6 +115,8 @@ let hostAt = 0;           // local time it arrived
 let following = store.get("la_follow") === "1";
 let pollTimer = null;
 let busy = false;
+let lastPlay = { uri: null, at: 0 };  // what we last told the friend's Spotify to play
+let deviceId = null;                  // friend's device, remembered between ticks
 
 // ---- boot ------------------------------------------------------------------
 (async function boot() {
@@ -166,24 +171,44 @@ function setFollowing(on) {
 function startPolling() {
   $("player").classList.remove("hidden");
   setFollowing(following && !!spotifyTokens());
-  tick();
-  clearInterval(pollTimer);
-  pollTimer = setInterval(tick, POLL_MS);
+  clearTimeout(pollTimer);
+  loop();
   requestAnimationFrame(drawProgress);
 }
+
+// Poll quickly while Majed is playing, and check right as his song should end
+// so the next one starts on the friend's side without waiting a full interval.
+async function loop() {
+  await tick();
+  if (!password) return;
+  let wait = host && host.playing ? POLL_MS : IDLE_POLL_MS;
+  const t = host && host.track;
+  if (host && host.playing && t && t.duration_ms) {
+    const left = t.duration_ms - hostPosition();
+    if (left > 0 && left + 400 < wait) wait = left + 400;
+  }
+  clearTimeout(pollTimer);
+  pollTimer = setTimeout(loop, Math.max(300, wait));
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && password) { clearTimeout(pollTimer); loop(); }
+});
 
 async function tick() {
   if (busy) return;
   busy = true;
   try {
+    const sent = Date.now();
     const res = await fetch(CONFIG.workerUrl + "/now-playing", { headers: { authorization: "Bearer " + password } });
     if (res.status === 401) {
-      store.del("la_pw"); password = null; clearInterval(pollTimer);
+      store.del("la_pw"); password = null; clearTimeout(pollTimer);
       return showPassword("That password didn't work.");
     }
     const data = await res.json();
     if (!res.ok) { stateText("Couldn't reach Spotify. Retrying…", false); return; }
-    host = data; hostAt = Date.now();
+    // The reported position is from roughly the middle of the round trip.
+    host = data; hostAt = sent + (Date.now() - sent) / 2;
     $("who").textContent = data.friend;
     $("foot").classList.remove("hidden");
     render();
@@ -248,9 +273,17 @@ function fmt(ms) {
 // ---- keeping the friend's Spotify in sync -----------------------------------
 async function sync() {
   const t = host && host.track;
+
+  // Majed switched songs: start the new one right away, skipping the status check.
+  if (t && host.playing && deviceId && lastPlay.uri && lastPlay.uri !== t.uri) {
+    return play(t);
+  }
+
+  const sent = Date.now();
   const me = await sp("GET", "/me/player");
   if (me === null) return;
   const mine = me.status === 200 ? await me.json() : null;
+  if (mine && mine.device && mine.device.id) deviceId = mine.device.id;
 
   if (!t || !host.playing) {
     if (mine && mine.is_playing && mine.item && t && mine.item.uri === t.uri) {
@@ -260,15 +293,17 @@ async function sync() {
     return;
   }
 
-  const target = hostPosition();
   const sameTrack = mine && mine.item && mine.item.uri === t.uri;
-  const drift = sameTrack ? Math.abs((mine.progress_ms || 0) - target) : Infinity;
-  if (sameTrack && mine.is_playing && drift < DRIFT_MS) {
-    syncMsg("In sync ✓", null);
-    return;
+  const settling = sameTrack && lastPlay.uri === t.uri && Date.now() - lastPlay.at < SETTLE_MS;
+  if (sameTrack && mine.is_playing) {
+    const theirPos = (mine.progress_ms || 0) + (Date.now() - sent) / 2;
+    if (settling || Math.abs(theirPos - hostPosition()) < DRIFT_MS) {
+      if (lastPlay.uri !== t.uri) lastPlay = { uri: t.uri, at: 0 };
+      syncMsg("In sync ✓", null);
+      return;
+    }
   }
 
-  let deviceId = mine && mine.device && mine.device.id;
   if (!deviceId) {
     const d = await sp("GET", "/me/player/devices");
     if (d === null) return;
@@ -280,13 +315,17 @@ async function sync() {
     }
     deviceId = pick.id;
   }
+  return play(t);
+}
 
+async function play(t) {
   const res = await sp("PUT", "/me/player/play?device_id=" + encodeURIComponent(deviceId), {
-    uris: [t.uri], position_ms: Math.round(hostPosition() + 250),
+    uris: [t.uri], position_ms: Math.round(hostPosition() + START_LEAD_MS),
   });
   if (res === null) return;
-  if (res.ok) syncMsg("In sync ✓");
-  else if (res.status === 403) syncMsg("Spotify blocked this. You need Spotify Premium, and Majed needs to add your Spotify email to his app. Ask him to check.", "err");
+  if (res.ok) { lastPlay = { uri: t.uri, at: Date.now() }; syncMsg("In sync ✓"); return; }
+  if (res.status === 404) deviceId = null; // device went away; look it up again next time
+  if (res.status === 403) syncMsg("Spotify blocked this. You need Spotify Premium, and Majed needs to add your Spotify email to his app. Ask him to check.", "err");
   else if (res.status === 404) syncMsg("Open Spotify on your phone or computer, then this will start playing there.", "warn");
   else syncMsg("Spotify didn't accept the request (" + res.status + "). Retrying…", "warn");
 }

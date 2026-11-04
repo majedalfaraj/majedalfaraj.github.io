@@ -5,7 +5,7 @@
 const SPOTIFY_ACCOUNTS = "https://accounts.spotify.com";
 const SPOTIFY_API = "https://api.spotify.com/v1";
 const OWNER_SCOPES = "user-read-currently-playing user-read-playback-state";
-const CACHE_MS = 2000; // share one Spotify call between friends polling at the same time
+const CACHE_MS = 1000; // share one Spotify call between friends polling at the same time
 
 let accessToken = null;   // { token, expiresAt }
 let cached = null;        // { body, at }
@@ -76,7 +76,9 @@ async function nowPlaying(request, env, cors) {
   if (!friend) return json({ error: "password" }, 401, cors);
 
   if (cached && Date.now() - cached.at < CACHE_MS) {
-    return json({ ...cached.body, friend, server_time: Date.now() }, 200, cors);
+    const body = { ...cached.body };
+    if (body.playing) body.progress_ms += Date.now() - cached.at; // cached position has moved on
+    return json({ ...body, friend, server_time: Date.now() }, 200, cors);
   }
 
   let res = await spotifyGet(env, "/me/player/currently-playing?additional_types=track,episode");
