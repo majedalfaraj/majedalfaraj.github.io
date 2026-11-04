@@ -95,7 +95,7 @@ const CONFIG = {
 };
 const REDIRECT_URI = location.origin + location.pathname;
 const FRIEND_SCOPES = "user-read-playback-state user-modify-playback-state";
-const POLL_MS = 1500;       // while Majed is playing
+const POLL_MS = 1000;       // while Majed is playing (backs off automatically if Spotify rate-limits)
 const IDLE_POLL_MS = 4000;  // while nothing is playing
 const DRIFT_MS = 1500;      // re-seek if more than this far off
 const SETTLE_MS = 3000;     // after starting a song, give Spotify this long before judging drift
@@ -117,6 +117,7 @@ let pollTimer = null;
 let busy = false;
 let lastPlay = { uri: null, at: 0 };  // what we last told the friend's Spotify to play
 let deviceId = null;                  // friend's device, remembered between ticks
+let backoffUntil = 0;                 // set when Spotify says we're polling too fast
 
 // ---- boot ------------------------------------------------------------------
 (async function boot() {
@@ -187,6 +188,7 @@ async function loop() {
     const left = t.duration_ms - hostPosition();
     if (left > 0 && left + 400 < wait) wait = left + 400;
   }
+  wait = Math.max(wait, backoffUntil - Date.now());
   clearTimeout(pollTimer);
   pollTimer = setTimeout(loop, Math.max(300, wait));
 }
@@ -206,7 +208,11 @@ async function tick() {
       return showPassword("That password didn't work.");
     }
     const data = await res.json();
-    if (!res.ok) { stateText("Couldn't reach Spotify. Retrying…", false); return; }
+    if (!res.ok) {
+      if (data.error === "rate_limited") backoffUntil = Date.now() + (data.retry_after || 5) * 1000;
+      stateText("Couldn't reach Spotify. Retrying…", false);
+      return;
+    }
     // The reported position is from roughly the middle of the round trip.
     host = data; hostAt = sent + (Date.now() - sent) / 2;
     $("who").textContent = data.friend;
@@ -389,11 +395,16 @@ function saveTokens(t, oldRefresh) {
 async function sp(method, path, body) {
   const token = await accessToken();
   if (!token) return null;
-  return fetch("https://api.spotify.com/v1" + path, {
+  const res = await fetch("https://api.spotify.com/v1" + path, {
     method,
     headers: { authorization: "Bearer " + token, ...(body ? { "content-type": "application/json" } : {}) },
     body: body ? JSON.stringify(body) : undefined,
   });
+  if (res.status === 429) {
+    backoffUntil = Date.now() + Number(res.headers.get("retry-after") || 5) * 1000;
+    return null;
+  }
+  return res;
 }
 
 function randomString(n) {
