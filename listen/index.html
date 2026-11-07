@@ -97,8 +97,13 @@ const REDIRECT_URI = location.origin + location.pathname;
 const FRIEND_SCOPES = "user-read-playback-state user-modify-playback-state";
 const POLL_MS = 1000;       // while Majed is playing (backs off automatically if Spotify rate-limits)
 const IDLE_POLL_MS = 4000;  // while nothing is playing
-const DRIFT_MS = 1500;      // re-seek if more than this far off
-const SETTLE_MS = 3000;     // after starting a song, give Spotify this long before judging drift
+// Like Discord, we only move the friend's player when Majed actually changes
+// something (new song, pause/play, seek). Between those, both players just run.
+const SEEK_DETECT_MS = 2000; // Majed's position jumped by more than this: he seeked
+const SAFETY_MS = 4000;      // between changes, only correct drift bigger than this...
+const SAFETY_STRIKES = 2;    // ...seen on this many checks in a row (Spotify's numbers wobble)
+const STEADY_CHECK_TICKS = 3; // between changes, look at the friend's player every 3rd poll
+const SETTLE_MS = 3000;     // after starting a song, give Spotify this long before judging it
 const START_LEAD_MS = 300;  // Spotify takes a moment to start audio, so aim slightly ahead
 
 // ---- storage (wrapped: private windows can throw) ----------------------------
@@ -116,6 +121,10 @@ let following = store.get("la_follow") === "1";
 let pollTimer = null;
 let busy = false;
 let lastPlay = { uri: null, at: 0 };  // what we last told the friend's Spotify to play
+let seen = null;          // Majed's state at the previous poll: { uri, playing, pos, at }
+let needsSync = true;     // force a full check (just joined, or the tab was in the background)
+let steadyTick = 0, strikes = 0;
+let awaitingRollover = null;  // { uri, since }: friend is finishing that song and should roll into the new one by itself
 let deviceId = null;                  // friend's device, remembered between ticks
 let backoffUntil = 0;                 // set when Spotify says we're polling too fast
 
@@ -165,7 +174,7 @@ function setFollowing(on) {
   $("join").classList.toggle("hidden", on);
   $("leave").classList.toggle("hidden", !on);
   syncMsg(on ? "Syncing your Spotify…" : "");
-  if (on) tick();
+  if (on) { needsSync = true; tick(); }
 }
 
 // ---- polling Majed's playback ------------------------------------------------
@@ -194,7 +203,7 @@ async function loop() {
 }
 
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden && password) { clearTimeout(pollTimer); loop(); }
+  if (!document.hidden && password) { needsSync = true; clearTimeout(pollTimer); loop(); }
 });
 
 async function tick() {
@@ -279,37 +288,75 @@ function fmt(ms) {
 // ---- keeping the friend's Spotify in sync -----------------------------------
 async function sync() {
   const t = host && host.track;
+  const prev = seen;
+  seen = t ? { uri: t.uri, playing: host.playing, pos: host.progress_ms, at: hostAt } : null;
 
-  // Majed switched songs: start the new one right away, skipping the status check.
-  if (t && host.playing && deviceId && lastPlay.uri && lastPlay.uri !== t.uri) {
-    return play(t);
-  }
-
-  const sent = Date.now();
-  const me = await sp("GET", "/me/player");
-  if (me === null) return;
-  const mine = me.status === 200 ? await me.json() : null;
-  if (mine && mine.device && mine.device.id) deviceId = mine.device.id;
-
+  // Majed paused or stopped: pause the friend once, then leave them alone.
   if (!t || !host.playing) {
-    if (mine && mine.is_playing && mine.item && t && mine.item.uri === t.uri) {
-      await sp("PUT", "/me/player/pause");
+    if (needsSync || (prev && prev.playing)) {
+      const { mine } = await friendState();
+      if (mine && mine.is_playing && mine.item && t && mine.item.uri === t.uri) await sp("PUT", "/me/player/pause");
+      needsSync = false;
     }
     syncMsg(t ? "Paused with Majed." : "Waiting for Majed to play something.");
     return;
   }
 
-  const sameTrack = mine && mine.item && mine.item.uri === t.uri;
-  const settling = sameTrack && lastPlay.uri === t.uri && Date.now() - lastPlay.at < SETTLE_MS;
-  if (sameTrack && mine.is_playing) {
-    const theirPos = (mine.progress_ms || 0) + (Date.now() - sent) / 2;
-    if (settling || Math.abs(theirPos - hostPosition()) < DRIFT_MS) {
-      if (lastPlay.uri !== t.uri) lastPlay = { uri: t.uri, at: 0 };
-      syncMsg("In sync ✓", null);
+  // What changed on Majed's side since the last poll?
+  const newSong = !prev || prev.uri !== t.uri;
+  const resumed = prev && prev.uri === t.uri && !prev.playing;
+  const seeked = prev && prev.uri === t.uri && prev.playing &&
+    Math.abs(host.progress_ms - (prev.pos + (hostAt - prev.at))) > SEEK_DETECT_MS;
+
+  if (resumed || seeked) return play(t);
+
+  if (newSong || needsSync || awaitingRollover) {
+    needsSync = false; strikes = 0; steadyTick = 0;
+    // On a natural song change the friend's Spotify has usually already rolled
+    // into the same next song (we queued it), so check before touching anything.
+    const { mine, drift } = await friendState();
+    if (mine === undefined) return;
+    if (onTrack(mine, t) && drift < SAFETY_MS) { awaitingRollover = null; syncMsg("In sync ✓"); return; }
+    // Still finishing the previous song with a few seconds left: let it roll over
+    // on its own (for up to 5 seconds) instead of cutting it off.
+    const oldUri = awaitingRollover ? awaitingRollover.uri : prev && prev.uri;
+    const finishing = oldUri && mine && mine.is_playing && mine.item && mine.item.uri === oldUri &&
+      mine.item.duration_ms - (mine.progress_ms || 0) < 4000;
+    if (finishing && (!awaitingRollover || Date.now() - awaitingRollover.since < 5000)) {
+      if (!awaitingRollover) awaitingRollover = { uri: oldUri, since: Date.now() };
       return;
     }
+    awaitingRollover = null;
+    return play(t);
   }
 
+  // Nothing changed: don't touch the friend's player, just glance at it now and
+  // then, and only step in if it's clearly gone wrong twice in a row.
+  if (lastPlay.uri === t.uri && Date.now() - lastPlay.at < SETTLE_MS) return;
+  if (++steadyTick % STEADY_CHECK_TICKS) return;
+  const { mine, drift } = await friendState();
+  if (mine === undefined) return;
+  if (onTrack(mine, t) && drift < SAFETY_MS) { strikes = 0; syncMsg("In sync ✓"); return; }
+  if (++strikes >= SAFETY_STRIKES) { strikes = 0; return play(t); }
+}
+
+function onTrack(mine, t) {
+  return !!(mine && mine.is_playing && mine.item && mine.item.uri === t.uri);
+}
+
+// The friend's player, and how far it is from Majed's position.
+// Returns { mine: undefined } if we couldn't ask (not logged in / rate limited).
+async function friendState() {
+  const sent = Date.now();
+  const me = await sp("GET", "/me/player");
+  if (me === null) return { mine: undefined, drift: Infinity };
+  const mine = me.status === 200 ? await me.json() : null;
+  if (mine && mine.device && mine.device.id) deviceId = mine.device.id;
+  const theirPos = mine ? (mine.progress_ms || 0) + (Date.now() - sent) / 2 : 0;
+  return { mine, drift: mine ? Math.abs(theirPos - hostPosition()) : Infinity };
+}
+
+async function play(t) {
   if (!deviceId) {
     const d = await sp("GET", "/me/player/devices");
     if (d === null) return;
@@ -321,19 +368,19 @@ async function sync() {
     }
     deviceId = pick.id;
   }
-  return play(t);
-}
-
-async function play(t) {
+  // Majed's next few songs go after this one, so the friend's Spotify moves on
+  // to the next song by itself, at the same moment his does, with no gap.
+  const uris = [t.uri, ...((host && host.next) || []).filter(u => u !== t.uri)];
   const res = await sp("PUT", "/me/player/play?device_id=" + encodeURIComponent(deviceId), {
-    uris: [t.uri], position_ms: Math.round(hostPosition() + START_LEAD_MS),
+    uris, position_ms: Math.round(hostPosition() + START_LEAD_MS),
   });
   if (res === null) return;
-  if (res.ok) { lastPlay = { uri: t.uri, at: Date.now() }; syncMsg("In sync ✓"); return; }
+  if (res.ok) { lastPlay = { uri: t.uri, at: Date.now() }; strikes = 0; syncMsg("In sync ✓"); return; }
   if (res.status === 404) deviceId = null; // device went away; look it up again next time
   if (res.status === 403) syncMsg("Spotify blocked this. You need Spotify Premium, and Majed needs to add your Spotify email to his app. Ask him to check.", "err");
   else if (res.status === 404) syncMsg("Open Spotify on your phone or computer, then this will start playing there.", "warn");
   else syncMsg("Spotify didn't accept the request (" + res.status + "). Retrying…", "warn");
+  if (res.status !== 403) needsSync = true; // try again on the next poll
 }
 
 // ---- friend's Spotify login (PKCE, no secret needed) --------------------------

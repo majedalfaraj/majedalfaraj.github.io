@@ -9,6 +9,9 @@ const CACHE_MS = 1000; // share one Spotify call between friends polling at the 
 
 let accessToken = null;   // { token, expiresAt }
 let cached = null;        // { body, at }
+let queueCache = null;    // { uri, next, at }: Majed's upcoming tracks, refreshed per song
+const QUEUE_MS = 20000;   // also refresh this often, in case he adds songs mid-track
+const QUEUE_LEN = 5;
 
 export default {
   async fetch(request, env) {
@@ -99,8 +102,29 @@ async function nowPlaying(request, env, cors) {
     return json({ error: "spotify", status: res.status }, 502, cors);
   }
 
+  if (body.track) body.next = await upcoming(env, body.track.uri);
+
   cached = { body, at: Date.now() };
   return json({ ...body, friend, server_time: Date.now() }, 200, cors);
+}
+
+// The next few tracks in Majed's queue, so a friend's Spotify can roll into
+// the next song at the same moment his does. Best effort: [] on any error.
+async function upcoming(env, uri) {
+  if (queueCache && queueCache.uri === uri && Date.now() - queueCache.at < QUEUE_MS) return queueCache.next;
+  let next = [];
+  try {
+    const res = await spotifyGet(env, "/me/player/queue");
+    if (res.ok) {
+      const data = await res.json();
+      next = (data.queue || [])
+        .map(item => item && item.uri)
+        .filter(u => typeof u === "string" && /^spotify:(track|episode):/.test(u))
+        .slice(0, QUEUE_LEN);
+    }
+  } catch {}
+  queueCache = { uri, next, at: Date.now() };
+  return next;
 }
 
 function shape(data) {
