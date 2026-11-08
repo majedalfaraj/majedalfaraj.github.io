@@ -79,7 +79,9 @@ The first time you save anything there, the friend list moves from the `FRIEND_P
 ## Limits worth knowing
 
 - The friend's page has to stay open (a phone tab in the background may get paused by the OS).
-- While you're playing, the page checks every second (and right when your song should end), slows down automatically if Spotify says it's polling too fast, and re-seeks when they drift more than about 1.5 seconds. It's close, but not sample-exact.
+- Like Discord, the page only moves the friend's player when you change something: a new song, pause/play, or a seek. While music just plays, it leaves their player alone, and only steps in if it's clearly off (over ~4 s on two checks in a row).
+- When it starts a song for them, it also queues your next few songs, so their Spotify rolls into the next song on its own at the same moment yours does.
+- Your skips, pauses and seeks reach them about 1.5 to 3 seconds later, mostly Spotify's own reporting delay. The page checks every second and slows down automatically if Spotify says it's polling too fast.
 - Phones pause background tabs, so on a phone the page works best left open on screen. On a computer, a background tab is fine.
-- If the friend starts playing something else themselves, the page will switch them back to your song. They tap **Stop listening along** to break off.
+- If the friend starts playing something else themselves, the page will switch them back to your song within a few seconds. They tap **Stop listening along** to break off.
 - Spotify does not let apps create or share Jam links, so this syncs playback instead of joining a Jam. You both hear the same thing, but they can't add to your queue.
